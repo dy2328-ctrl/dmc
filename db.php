@@ -1,17 +1,18 @@
 <?php
-// db.php - الاتصال والحماية
+// db.php - الاتصال والحماية (محدث لبيانات استضافتك)
 
-// إعدادات قاعدة البيانات (عدلها حسب السيرفر الخاص بك)
-$host = 'db5019378605.hosting-data.io ';
-$db   = 'dbs15162823';
-$user = 'dbu2244961';
-$pass = 'kuqteg-ginbak-myKga7';
+// إعدادات قاعدة البيانات الخاصة بك
+$host = 'db5019378605.hosting-data.io'; // خادم الاستضافة
+$db   = 'dbs15162823';                   // اسم القاعدة
+$user = 'dbu2244961';                    // اسم المستخدم
+$pass = 'YOUR_PASSWORD';                 // ⚠️ ضع كلمة المرور الحقيقية هنا
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch(PDOException $e) { 
-    die("خطأ في الاتصال بقاعدة البيانات. تأكد من تشغيل XAMPP أو السيرفر."); 
+    // في حال الفشل، تظهر رسالة الخطأ
+    die("خطأ في الاتصال بقاعدة البيانات: " . $e->getMessage()); 
 }
 
 // بدء الجلسة
