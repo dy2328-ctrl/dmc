@@ -1,36 +1,39 @@
 <?php
-// install.php - Gemini Quantum Edition
+// install.php - Gemini Ultimate PRO
 require 'db.php';
 
 $sql = "
--- 1. جدول المستخدمين (مع الصلاحيات)
+-- 1. المستخدمين
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE, password VARCHAR(255),
     full_name VARCHAR(100), phone VARCHAR(20), email VARCHAR(100),
     role ENUM('admin','staff') DEFAULT 'staff',
+    photo VARCHAR(255), -- صورة الموظف
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. الإعدادات العامة
+-- 2. الإعدادات
 CREATE TABLE IF NOT EXISTS settings (k VARCHAR(50) PRIMARY KEY, v LONGTEXT);
 
--- 3. العقارات (الأصول)
+-- 3. العقارات
 CREATE TABLE IF NOT EXISTS properties (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255), type VARCHAR(100), address TEXT, 
     manager_name VARCHAR(100), manager_phone VARCHAR(50),
+    photo VARCHAR(255), -- صورة العقار
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 4. الوحدات (التفاصيل الكاملة)
+-- 4. الوحدات
 CREATE TABLE IF NOT EXISTS units (
     id INT AUTO_INCREMENT PRIMARY KEY,
     property_id INT, unit_name VARCHAR(100), unit_number VARCHAR(50),
-    type ENUM('shop','apartment','villa','land','office','warehouse') DEFAULT 'apartment',
+    type ENUM('shop','apartment','villa','land','office','warehouse','building','compound') DEFAULT 'apartment',
     floor_number VARCHAR(50), yearly_price DECIMAL(15,2),
     elec_meter_no VARCHAR(50), water_meter_no VARCHAR(50),
     status ENUM('available','rented','maintenance') DEFAULT 'available',
+    photo VARCHAR(255), -- صورة الوحدة
     notes TEXT,
     FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE
 );
@@ -40,10 +43,12 @@ CREATE TABLE IF NOT EXISTS tenants (
     id INT AUTO_INCREMENT PRIMARY KEY,
     full_name VARCHAR(255), phone VARCHAR(20), email VARCHAR(100),
     id_type ENUM('national','iqama','commercial') DEFAULT 'national',
-    id_number VARCHAR(50), address TEXT
+    id_number VARCHAR(50), address TEXT,
+    id_photo VARCHAR(255), -- صورة الهوية
+    personal_photo VARCHAR(255) -- صورة شخصية
 );
 
--- 6. العقود (مع التوقيع)
+-- 6. العقود
 CREATE TABLE IF NOT EXISTS contracts (
     id INT AUTO_INCREMENT PRIMARY KEY,
     tenant_id INT, unit_id INT, start_date DATE, end_date DATE,
@@ -54,21 +59,15 @@ CREATE TABLE IF NOT EXISTS contracts (
     FOREIGN KEY (tenant_id) REFERENCES tenants(id),
     FOREIGN KEY (unit_id) REFERENCES units(id)
 );
-
--- 7. الدفعات
-CREATE TABLE IF NOT EXISTS payments (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    contract_id INT, amount DECIMAL(15,2), payment_date DATE,
-    payment_method VARCHAR(50), note TEXT, uuid VARCHAR(50) UNIQUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE
-);
 ";
 
 try {
     $pdo->exec($sql);
     
-    // إنشاء الأدمن الافتراضي
+    // إنشاء مجلد الصور إذا لم يوجد
+    if (!file_exists('uploads')) { mkdir('uploads', 0777, true); }
+
+    // إنشاء الأدمن
     $chk = $pdo->query("SELECT count(*) FROM users WHERE username='admin'")->fetchColumn();
     if($chk == 0){
         $pdo->prepare("INSERT INTO users (username, password, full_name, role) VALUES (?,?,?,?)")
@@ -76,17 +75,12 @@ try {
     }
 
     // إعدادات افتراضية
-    $defaults = [
-        'company_name'=>'دار الميار للمقاولات', 
-        'vat_no'=>'3000000000', 
-        'logo'=>'logo.png',
-        'currency'=>'ر.س'
-    ];
+    $defaults = ['company_name'=>'دار الميار للمقاولات', 'vat_no'=>'3000000000', 'logo'=>'logo.png'];
     foreach($defaults as $k=>$v) $pdo->prepare("INSERT IGNORE INTO settings (k,v) VALUES (?,?)")->execute([$k,$v]);
 
-    echo "<div style='font-family:tahoma; text-align:center; padding:50px; background:#111; color:#4ade80;'>
-            <h1>🚀 تم تحديث النظام بنجاح (Gemini Quantum)</h1>
-            <p>تم إصلاح الجداول، تفعيل أنواع الوحدات، والتوقيع الإلكتروني.</p>
+    echo "<div style='font-family:tahoma; text-align:center; padding:50px; background:#1e293b; color:#4ade80;'>
+            <h1>✅ تم ترقية النظام إلى Gemini Ultimate PRO</h1>
+            <p>تم تفعيل تخزين الصور، الصلاحيات المتقدمة، وأنواع العقارات الجديدة.</p>
             <a href='index.php' style='color:white; font-size:20px; text-decoration:underline'>الدخول للنظام</a>
           </div>";
 
