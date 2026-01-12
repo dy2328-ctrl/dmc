@@ -1,60 +1,73 @@
 <?php
-// إحصائيات من قاعدة البيانات المرفقة
-$income = $pdo->query("SELECT SUM(amount) FROM payments")->fetchColumn() ?: 0; // الجدول payments عمود amount
+$income = $pdo->query("SELECT SUM(amount) FROM payments")->fetchColumn() ?: 0;
 $total_con = $pdo->query("SELECT SUM(total_amount) FROM contracts")->fetchColumn() ?: 0;
-$units_avail = $pdo->query("SELECT count(*) FROM units WHERE status='available'")->fetchColumn();
+$expense = 0; // يمكن ربطه بجدول الصيانة لاحقاً
 $units_rented = $pdo->query("SELECT count(*) FROM units WHERE status='rented'")->fetchColumn();
+$units_total = $pdo->query("SELECT count(*) FROM units")->fetchColumn() ?: 1;
 ?>
 
-<div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <div class="card p-3 text-white bg-primary bg-gradient">
-            <h4 class="mb-0"><?= number_format($income) ?> SAR</h4>
-            <small>إجمالي التحصيل</small>
-            <i class="fa-solid fa-wallet position-absolute end-0 bottom-0 m-3 opacity-25 fa-2x"></i>
-        </div>
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-val" style="color:#10b981"><?= number_format($income) ?></div>
+        <div class="stat-label">إجمالي التحصيل</div>
+        <i class="fa-solid fa-wallet" style="margin-top:10px; font-size:24px; color:#10b981"></i>
     </div>
-    <div class="col-md-3">
-        <div class="card p-3 text-white bg-success bg-gradient">
-            <h4 class="mb-0"><?= number_format($total_con) ?> SAR</h4>
-            <small>قيمة العقود النشطة</small>
-            <i class="fa-solid fa-file-contract position-absolute end-0 bottom-0 m-3 opacity-25 fa-2x"></i>
-        </div>
+    <div class="stat-card">
+        <div class="stat-val" style="color:#6366f1"><?= number_format($total_con) ?></div>
+        <div class="stat-label">قيمة العقود</div>
+        <i class="fa-solid fa-file-invoice-dollar" style="margin-top:10px; font-size:24px; color:#6366f1"></i>
     </div>
-    <div class="col-md-3">
-        <div class="card p-3 text-dark bg-warning bg-gradient">
-            <h4 class="mb-0"><?= $units_rented ?></h4>
-            <small>وحدات مؤجرة</small>
-            <i class="fa-solid fa-building-user position-absolute end-0 bottom-0 m-3 opacity-25 fa-2x"></i>
-        </div>
+    <div class="stat-card">
+        <div class="stat-val" style="color:#ef4444"><?= number_format($expense) ?></div>
+        <div class="stat-label">المصروفات</div>
+        <i class="fa-solid fa-tools" style="margin-top:10px; font-size:24px; color:#ef4444"></i>
     </div>
-    <div class="col-md-3">
-        <div class="card p-3 text-white bg-danger bg-gradient">
-            <h4 class="mb-0"><?= $units_avail ?></h4>
-            <small>وحدات شاغرة</small>
-            <i class="fa-solid fa-door-open position-absolute end-0 bottom-0 m-3 opacity-25 fa-2x"></i>
-        </div>
+    <div class="stat-card">
+        <div class="stat-val"><?= $units_rented ?> / <?= $units_total ?></div>
+        <div class="stat-label">الوحدات المؤجرة</div>
+        <i class="fa-solid fa-building" style="margin-top:10px; font-size:24px; color:white"></i>
     </div>
 </div>
 
-<div class="card p-4">
-    <h5>📄 آخر العقود المضافة</h5>
-    <table class="table table-sm">
-        <thead><tr><th>#</th><th>الوحدة</th><th>القيمة</th><th>الحالة</th></tr></thead>
-        <tbody>
-            <?php
-            $last_con = $pdo->query("SELECT c.*, u.unit_name 
-                                     FROM contracts c 
-                                     JOIN units u ON c.unit_id = u.id 
-                                     ORDER BY c.id DESC LIMIT 5");
-            while($row = $last_con->fetch()): ?>
-            <tr>
-                <td><?= $row['id'] ?></td>
-                <td><?= $row['unit_name'] ?></td>
-                <td><?= number_format($row['total_amount']) ?></td>
-                <td><span class="badge bg-<?= $row['status']=='active'?'success':'secondary' ?>"><?= $row['status'] ?></span></td>
-            </tr>
-            <?php endwhile; ?>
-        </tbody>
-    </table>
+<div class="stats-grid" style="grid-template-columns: 2fr 1fr;">
+    <div class="card">
+        <h3>الأداء المالي</h3>
+        <canvas id="financeChart" height="100"></canvas>
+    </div>
+    <div class="card">
+        <h3>نسب الإشغال</h3>
+        <canvas id="occupancyChart" height="200"></canvas>
+    </div>
 </div>
+
+<script>
+    new Chart(document.getElementById('financeChart'), {
+        type:'bar',
+        data:{
+            labels:['قيمة العقود','المحصل','المصروفات'],
+            datasets:[{
+                label:'ريال',
+                data:[<?=$total_con?>,<?=$income?>,<?=$expense?>],
+                backgroundColor:['#6366f1','#10b981','#ef4444'],
+                borderRadius:10
+            }]
+        },
+        options:{
+            scales:{y:{grid:{color:'#333'}},x:{grid:{display:false}}},
+            plugins:{legend:{display:false}}
+        }
+    });
+    
+    new Chart(document.getElementById('occupancyChart'), {
+        type:'doughnut',
+        data:{
+            labels:['مؤجر','شاغر'],
+            datasets:[{
+                data:[<?=$units_rented?>,<?=$units_total-$units_rented?>],
+                backgroundColor:['#10b981','#222'],
+                borderWidth:0
+            }]
+        },
+        options:{cutout:'70%'}
+    });
+</script>
