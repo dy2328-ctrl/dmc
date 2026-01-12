@@ -8,20 +8,10 @@ try {
     $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-} catch(PDOException $e) { die("Connection Failed"); }
+} catch(PDOException $e) { die("خطأ في الاتصال بقاعدة البيانات"); }
 
 session_start();
 
-// Helper Functions
-function getSetting($key) {
-    global $pdo;
-    $stmt = $pdo->prepare("SELECT v FROM settings WHERE k=?");
-    $stmt->execute([$key]);
-    return $stmt->fetchColumn() ?: '';
-}
-
-function saveSetting($key, $val) {
-    global $pdo;
-    $pdo->prepare("REPLACE INTO settings (k,v) VALUES (?,?)")->execute([$key, $val]);
-}
+function getSet($k) { global $pdo; $s=$pdo->prepare("SELECT v FROM settings WHERE k=?"); $s->execute([$k]); return $s->fetchColumn(); }
+function saveSet($k,$v) { global $pdo; $pdo->prepare("REPLACE INTO settings (k,v) VALUES (?,?)")->execute([$k,$v]); }
 ?>
