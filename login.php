@@ -1,59 +1,33 @@
 <?php
 require 'db.php';
-if($_POST) {
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE email=?");
-    $stmt->execute([$_POST['email']]);
+if($_POST){
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE username=?");
+    $stmt->execute([$_POST['user']]);
     $u = $stmt->fetch();
-    if($u && password_verify($_POST['pass'], $u['password'])) {
+    if($u && password_verify($_POST['pass'], $u['password'])){
         $_SESSION['uid'] = $u['id']; header("Location: index.php"); exit;
-    } else $err = "بيانات الدخول غير صحيحة";
+    } else $err="بيانات خاطئة";
 }
 ?>
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>تسجيل الدخول - Gemini Estate</title>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;500;800&display=swap" rel="stylesheet">
+    <title>دخول - دار الميار</title>
     <style>
-        body {
-            margin: 0; height: 100vh; font-family: 'Tajawal';
-            background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
-            display: flex; align-items: center; justify-content: center; overflow: hidden;
-        }
-        .glass-card {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 50px; border-radius: 24px; width: 380px; text-align: center;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        }
-        .logo { width: 100px; margin-bottom: 20px; filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.5)); }
-        input {
-            width: 100%; padding: 15px; margin: 10px 0; border-radius: 12px; border: 1px solid #334155;
-            background: #0f172a; color: white; outline: none; font-family: inherit; transition: 0.3s;
-            box-sizing: border-box;
-        }
-        input:focus { border-color: #6366f1; box-shadow: 0 0 15px rgba(99, 102, 241, 0.3); }
-        button {
-            width: 100%; padding: 15px; border-radius: 12px; border: none; margin-top: 20px;
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            color: white; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.3s;
-        }
-        button:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(99, 102, 241, 0.4); }
-        h2 { color: white; margin: 0 0 10px 0; }
-        p { color: #94a3b8; font-size: 14px; margin-bottom: 30px; }
-        .err { color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; }
+        body{background:#0f172a; color:white; font-family:'Segoe UI',tahoma; display:flex; align-items:center; justify-content:center; height:100vh; margin:0}
+        .box{background:#1e293b; padding:40px; border-radius:20px; text-align:center; width:350px; box-shadow:0 10px 30px rgba(0,0,0,0.5)}
+        input{width:100%; padding:12px; margin:10px 0; border-radius:8px; border:1px solid #334155; background:#0f172a; color:white; box-sizing:border-box}
+        button{width:100%; padding:12px; border-radius:8px; border:none; background:#6366f1; color:white; font-weight:bold; cursor:pointer; margin-top:20px}
     </style>
 </head>
 <body>
-    <div class="glass-card">
-        <img src="logo.png" class="logo" onerror="this.style.display='none'">
-        <h2>مرحباً بك مجدداً</h2>
-        <p>نظام إدارة الأملاك والمقاولات الذكي</p>
-        <?php if(isset($err)) echo "<div class='err'>$err</div>"; ?>
+    <div class="box">
+        <img src="logo.png" width="100" style="margin-bottom:20px">
+        <h2>دار الميار للمقاولات</h2>
+        <?php if(isset($err)) echo "<p style='color:red'>$err</p>"; ?>
         <form method="POST">
-            <input type="email" name="email" placeholder="البريد الإلكتروني" required>
+            <input type="text" name="user" placeholder="اسم المستخدم (admin)" required>
             <input type="password" name="pass" placeholder="كلمة المرور" required>
             <button>تسجيل الدخول</button>
         </form>
