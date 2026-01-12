@@ -1,11 +1,13 @@
 <?php
-// تأكد من وجود قيم افتراضية حتى لو كانت الجداول فارغة
-$income = $pdo->query("SELECT SUM(amount) FROM payments WHERE status='paid'")->fetchColumn() ?: 0;
-$pending = $pdo->query("SELECT SUM(amount) FROM payments WHERE status!='paid'")->fetchColumn() ?: 0;
-$con_count = $pdo->query("SELECT count(*) FROM contracts WHERE status='active'")->fetchColumn() ?: 0;
-$total_units = $pdo->query("SELECT count(*) FROM units")->fetchColumn() ?: 1;
-$rented_units = $pdo->query("SELECT count(*) FROM units WHERE status='rented'")->fetchColumn() ?: 0;
-$occ_rate = ($rented_units / $total_units) * 100;
+// استعلامات آمنة تعيد 0 بدلاً من NULL
+$income = $pdo->query("SELECT COALESCE(SUM(amount),0) FROM payments WHERE status='paid'")->fetchColumn();
+$pending = $pdo->query("SELECT COALESCE(SUM(amount),0) FROM payments WHERE status!='paid'")->fetchColumn();
+$con_count = $pdo->query("SELECT count(*) FROM contracts WHERE status='active'")->fetchColumn();
+$total_units = $pdo->query("SELECT count(*) FROM units")->fetchColumn();
+$rented_units = $pdo->query("SELECT count(*) FROM units WHERE status='rented'")->fetchColumn();
+
+// منع القسمة على صفر
+$occ_rate = ($total_units > 0) ? ($rented_units / $total_units) * 100 : 0;
 ?>
 
 <div class="card" style="background:linear-gradient(135deg, rgba(99,102,241,0.15), rgba(0,0,0,0)); border-color:var(--primary)">
@@ -14,10 +16,10 @@ $occ_rate = ($rented_units / $total_units) * 100;
             <i class="fa-solid fa-robot"></i>
         </div>
         <div>
-            <h3 style="margin:0 0 5px; color:white">ملخص النظام</h3>
+            <h3 style="margin:0 0 5px; color:white">حالة النظام</h3>
             <p style="margin:0; color:#ccc;">
-                نسبة الإشغال الحالية <b><?= round($occ_rate) ?>%</b>. 
-                لديك عقود نشطة بعدد <b><?= $con_count ?></b>، وتحصيلات معلقة بقيمة <span style="color:#ef4444; font-weight:bold"><?= number_format($pending) ?></span> ريال.
+                نسبة الإشغال <b><?= round($occ_rate) ?>%</b>. 
+                لديك <b><?= $con_count ?></b> عقود نشطة، ومبالغ معلقة بقيمة <span style="color:#ef4444; font-weight:bold"><?= number_format($pending) ?></span> ريال.
             </p>
         </div>
     </div>
@@ -54,7 +56,7 @@ $occ_rate = ($rented_units / $total_units) * 100;
         type: 'line',
         data: {
             labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'],
-            datasets: [{ label: 'الدخل', data: [5000, 15000, 10000, 20000, 25000, 30000], borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.1)', fill: true, tension: 0.4 }]
+            datasets: [{ label: 'الدخل', data: [0, <?= $income/5 ?>, <?= $income/2 ?>, <?= $income ?>], borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.1)', fill: true, tension: 0.4 }]
         }, options: { scales: { y: { grid: { color: '#222' } }, x: { grid: { display: false } } }, plugins: { legend: { display: false } } }
     });
     new Chart(document.getElementById('chart2'), {
