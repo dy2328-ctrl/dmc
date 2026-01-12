@@ -1,9 +1,9 @@
 <?php
-// install.php - Dar Al-Mayar Pro Edition
+// install.php - Gemini Ultimate Dark
 require 'db.php';
 
 $sql = "
--- 1. المستخدمين
+-- المستخدمين
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE, password VARCHAR(255),
@@ -11,17 +11,17 @@ CREATE TABLE IF NOT EXISTS users (
     photo VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. الإعدادات
+-- الإعدادات
 CREATE TABLE IF NOT EXISTS settings (k VARCHAR(50) PRIMARY KEY, v LONGTEXT);
 
--- 3. العقارات
+-- العقارات
 CREATE TABLE IF NOT EXISTS properties (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255), type VARCHAR(100), address TEXT, 
     manager_name VARCHAR(100), manager_phone VARCHAR(50), photo VARCHAR(255)
 );
 
--- 4. الوحدات
+-- الوحدات
 CREATE TABLE IF NOT EXISTS units (
     id INT AUTO_INCREMENT PRIMARY KEY,
     property_id INT, unit_name VARCHAR(100), type VARCHAR(50),
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS units (
     FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE
 );
 
--- 5. المستأجرين (تمت إضافة الحقول الجديدة: السجل، المرفقات)
+-- المستأجرين (شامل السجل التجاري والمرفقات)
 CREATE TABLE IF NOT EXISTS tenants (
     id INT AUTO_INCREMENT PRIMARY KEY,
     full_name VARCHAR(255), phone VARCHAR(20), id_number VARCHAR(50), 
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS tenants (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 6. العقود
+-- العقود
 CREATE TABLE IF NOT EXISTS contracts (
     id INT AUTO_INCREMENT PRIMARY KEY,
     tenant_id INT, unit_id INT, start_date DATE, end_date DATE,
@@ -51,15 +51,12 @@ CREATE TABLE IF NOT EXISTS contracts (
     FOREIGN KEY (unit_id) REFERENCES units(id)
 );
 
--- 7. الدفعات (الأقساط) - ميزة جديدة
+-- الدفعات (الأقساط)
 CREATE TABLE IF NOT EXISTS payments (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    contract_id INT, 
-    title VARCHAR(100), -- دفعة 1، دفعة 2...
-    amount DECIMAL(15,2), -- المبلغ المستحق
-    paid_amount DECIMAL(15,2) DEFAULT 0, -- المبلغ المدفوع
-    due_date DATE, -- تاريخ الاستحقاق
-    status VARCHAR(20) DEFAULT 'pending', -- pending, paid, partial, late
+    contract_id INT, title VARCHAR(100), 
+    amount DECIMAL(15,2), paid_amount DECIMAL(15,2) DEFAULT 0, 
+    due_date DATE, status VARCHAR(20) DEFAULT 'pending', 
     paid_date DATE,
     FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE
 );
@@ -72,7 +69,6 @@ try {
     $defaults = ['company_name'=>'دار الميار للمقاولات', 'logo'=>'logo.png'];
     foreach($defaults as $k=>$v) $pdo->prepare("INSERT IGNORE INTO settings (k,v) VALUES (?,?)")->execute([$k,$v]);
 
-    // إنشاء مجلد الصور
     if (!file_exists('uploads')) { mkdir('uploads', 0777, true); }
 
     // إنشاء الأدمن
@@ -82,10 +78,10 @@ try {
             ->execute(['admin', password_hash('123456', PASSWORD_DEFAULT), 'المدير العام', 'admin']);
     }
 
-    echo "<div style='font-family:tahoma; text-align:center; padding:50px; background:#f3f4f6; color:#10b981;'>
-            <h1>✅ تم التحديث لنسخة Dar Al-Mayar Pro</h1>
-            <p>تم تفعيل نظام الدفعات التلقائي والمرفقات.</p>
-            <a href='index.php' style='background:#6366f1; color:white; padding:10px 20px; text-decoration:none; border-radius:8px'>الدخول للنظام</a>
+    echo "<div style='background:#050505; color:#4ade80; padding:50px; text-align:center; font-family:tahoma;'>
+            <h1>✅ تم الترقية لنسخة Ultimate Dark</h1>
+            <p>تم تفعيل المحرك الذكي للدفعات مع التصميم الليلي.</p>
+            <a href='index.php' style='color:white; font-size:20px; text-decoration:underline'>الدخول للنظام</a>
           </div>";
 
 } catch (PDOException $e) { die("Error: " . $e->getMessage()); }
