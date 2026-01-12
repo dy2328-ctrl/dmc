@@ -1,6 +1,7 @@
 <?php
 require 'db.php';
-$company = getSet('company_name') ?: 'دار الميار للمقاولات';
+$name = getSet('company_name') ?: 'دار الميار للمقاولات';
+$logo = getSet('logo') ?: 'logo.png';
 if($_POST){
     $stmt = $pdo->prepare("SELECT * FROM users WHERE username=?");
     $stmt->execute([$_POST['user']]);
@@ -14,54 +15,50 @@ if($_POST){
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>تسجيل الدخول - <?= $company ?></title>
+    <title>دخول - <?= $name ?></title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
     <style>
         body {
             margin: 0; height: 100vh; font-family: 'Tajawal';
-            background: #0f172a; background-image: radial-gradient(circle at top, #1e293b, #0f172a);
-            display: flex; align-items: center; justify-content: center;
+            background: #050505; 
+            background-image: radial-gradient(circle at 50% 0%, #1e1b4b, #000);
+            display: flex; align-items: center; justify-content: center; color: white;
         }
-        .login-card {
-            background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(20px);
-            width: 450px; padding: 60px 40px; border-radius: 30px;
-            text-align: center; border: 1px solid rgba(255,255,255,0.05);
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        .glass-box {
+            background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 420px; padding: 60px 40px; border-radius: 30px; text-align: center;
+            box-shadow: 0 0 50px rgba(99, 102, 241, 0.15);
         }
-        .logo-box {
-            width: 140px; height: 140px; margin: 0 auto 30px;
-            background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 40px rgba(99, 102, 241, 0.3);
+        .logo-con {
+            width: 120px; height: 120px; margin: 0 auto 30px; background: white;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            border: 4px solid #6366f1; box-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
         }
-        h2 { color: white; margin: 0 0 10px; font-size: 28px; }
-        p { color: #94a3b8; margin-bottom: 40px; font-size: 16px; }
         input {
-            width: 100%; padding: 18px 20px; margin-bottom: 20px;
-            background: #1e293b; border: 2px solid #334155; border-radius: 15px;
-            color: white; font-size: 16px; outline: none; transition: 0.3s;
-            box-sizing: border-box; font-family: inherit;
+            width: 100%; padding: 18px; margin-bottom: 20px; border-radius: 15px;
+            border: 2px solid #333; background: #0a0a0a; color: white; font-size: 16px;
+            outline: none; transition: 0.3s; box-sizing: border-box; font-family: inherit;
         }
-        input:focus { border-color: #6366f1; background: #0f172a; }
+        input:focus { border-color: #6366f1; background: #111; box-shadow: 0 0 15px rgba(99, 102, 241, 0.2); }
         button {
             width: 100%; padding: 18px; border-radius: 15px; border: none;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            color: white; font-size: 18px; font-weight: bold; cursor: pointer;
-            transition: 0.3s;
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            color: white; font-weight: 800; font-size: 18px; cursor: pointer; transition: 0.3s;
         }
-        button:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4); }
-        .err { background: #fee2e2; color: #991b1b; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+        button:hover { transform: scale(1.02); box-shadow: 0 0 30px rgba(99, 102, 241, 0.4); }
     </style>
 </head>
 <body>
-    <div class="login-card">
-        <div class="logo-box"><img src="logo.png" style="max-width:80%; max-height:80%"></div>
-        <h2><?= $company ?></h2>
-        <p>بوابة إدارة الأملاك والمقاولات</p>
-        <?php if(isset($err)) echo "<div class='err'>$err</div>"; ?>
+    <div class="glass-box">
+        <div class="logo-con"><img src="<?= $logo ?>" style="max-width:80%; max-height:80%"></div>
+        <h2 style="margin:0 0 10px"><?= $name ?></h2>
+        <p style="color:#888; margin-bottom:40px">لوحة تحكم الإدارة الذكية</p>
+        <?php if(isset($err)) echo "<div style='color:#f87171; background:rgba(255,0,0,0.1); padding:10px; border-radius:10px; margin-bottom:20px'>$err</div>"; ?>
         <form method="POST">
             <input type="text" name="user" placeholder="اسم المستخدم" required>
             <input type="password" name="pass" placeholder="كلمة المرور" required>
-            <button>تسجيل الدخول الآمن</button>
+            <button>تسجيل الدخول</button>
         </form>
     </div>
 </body>
