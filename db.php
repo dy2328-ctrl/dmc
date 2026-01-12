@@ -13,7 +13,7 @@ try {
         $pdo = new PDO("mysql:host=$host;charset=utf8mb4", $user, $pass);
         $pdo->exec("CREATE DATABASE IF NOT EXISTS `$db`");
         $pdo->exec("USE `$db`");
-    } catch(PDOException $ex) { die("Connection Failed"); }
+    } catch(PDOException $ex) { die("Database Error"); }
 }
 session_start();
 function getSet($k){global $pdo; try{$s=$pdo->prepare("SELECT v FROM settings WHERE k=?");$s->execute([$k]);return $s->fetchColumn();}catch(E $e){return '';}}
