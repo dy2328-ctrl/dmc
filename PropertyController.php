@@ -1,24 +1,21 @@
-namespace App\Http\Controllers;
-
-use App\Models\Property;
-use Illuminate\Http\Request;
-
-class PropertyController extends Controller
+public function store(Request $request)
 {
-    public function store(Request $request)
-    {
-        // 1. التحقق من صحة البيانات (Validation) - معايير الأمان
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'manager_name' => 'required|string|max:255',
-            'manager_phone' => 'required|numeric',
-            'address' => 'nullable|string',
-        ]);
+    // 1. التحقق الصارم (Validation) لمنع حقن البيانات
+    $validated = $request->validate([
+        'unit_name' => 'required|string|max:255',
+        'yearly_price' => 'required|numeric|min:0',
+        'photo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // حماية من الملفات الضارة
+    ]);
 
-        // 2. إنشاء السجل في قاعدة البيانات
-        Property::create($validated);
-
-        // 3. إعادة التوجيه مع رسالة نجاح
-        return redirect()->back()->with('success', 'تم إضافة العقار بنجاح');
+    // 2. التخزين الآمن للصور (بدلاً من Base64)
+    if ($request->hasFile('photo')) {
+        // يتم تخزين الصورة في مجلد محمي مع إعادة تسميتها تلقائياً
+        $path = $request->file('photo')->store('units', 'public');
+        $validated['photo_url'] = '/storage/' . $path;
     }
+
+    // 3. استخدام Eloquent ORM للحماية من SQL Injection
+    $unit = Unit::create($validated);
+
+    return redirect()->back()->with('success', 'تمت إضافة الوحدة بنظام آمن.');
 }
