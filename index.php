@@ -1,28 +1,24 @@
 <?php
+// index.php
 require 'config.php';
-require 'SmartSystem.php'; // استدعاء العقل الذكي
+require 'SmartSystem.php';
 
 if(!isset($_SESSION['uid'])) { header("Location: login.php"); exit; }
 
-// تحديد الصفحة المطلوبة
-$page = $_GET['p'] ?? 'dashboard';
-$allowed_pages = ['dashboard', 'properties', 'units', 'tenants', 'contracts', 'maintenance', 'settings', 'ai_assistant'];
+$p = $_GET['p'] ?? 'dashboard';
+$allowed = ['dashboard', 'properties', 'units', 'tenants', 'contracts', 'contract_view', 'tenant_view', 'maintenance', 'settings'];
 
-// جلب بيانات المستخدم
-$stmt = $pdo->prepare("SELECT * FROM users WHERE id=?");
-$stmt->execute([$_SESSION['uid']]);
-$user = $stmt->fetch();
+// تضمين الهيدر
+include 'includes/header.php';
 
-// تحميل الهيدر
-include 'includes/header.php'; 
-
-// تحميل الصفحة المطلوبة ديناميكياً
-if(in_array($page, $allowed_pages) && file_exists("pages/$page.php")) {
-    include "pages/$page.php";
+// تحميل الصفحة المطلوبة
+if(in_array($p, $allowed) && file_exists("pages/$p.php")) {
+    include "pages/$p.php";
 } else {
-    echo "<div class='alert alert-danger'>الصفحة غير موجودة</div>";
+    echo "<div class='p-5 text-center'><h1>404</h1><p>الصفحة غير موجودة</p></div>";
 }
 
-// تحميل الفوتر
+// تضمين الفوتر
 include 'includes/footer.php';
+ob_end_flush();
 ?>
