@@ -12,7 +12,7 @@ define('DB_NAME', 'dbs15162823');
 define('DB_USER', 'dbu2244961');
 define('DB_PASS', 'kuqteg-ginbak-myKga7');
 
-// 🔑 مفاتيح API (استبدلها بمفاتيحك الحقيقية)
+// 🔑 مفاتيح API
 define('WHATSAPP_API_URL', 'https://api.ultramsg.com/instance/messages/chat');
 define('WHATSAPP_TOKEN', 'your_token_here');
 
@@ -21,10 +21,9 @@ try {
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 } catch(PDOException $e) {
-    die("خطأ في الاتصال بقاعدة البيانات.");
+    die("خطأ في الاتصال بقاعدة البيانات: " . $e->getMessage());
 }
 
-// دوال مساعدة
 function csrf_token() {
     if (empty($_SESSION['csrf_token'])) $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     return $_SESSION['csrf_token'];
@@ -42,6 +41,7 @@ function upload($f){
     if($f['error']==0){
         $ext = pathinfo($f['name'], PATHINFO_EXTENSION);
         $n = uniqid().'.'.$ext;
+        if (!is_dir('uploads')) mkdir('uploads');
         move_uploaded_file($f['tmp_name'], 'uploads/'.$n);
         return 'uploads/'.$n;
     }
