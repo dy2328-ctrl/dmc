@@ -1,5 +1,5 @@
 <?php
-// install.php - Dar Al-Mayar Enterprise Fixer
+// install.php - Master Edition Fix
 require 'db.php';
 
 $sql = "
@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE, password VARCHAR(255),
     full_name VARCHAR(100), phone VARCHAR(20), role ENUM('admin','staff') DEFAULT 'staff',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    photo VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS settings (k VARCHAR(50) PRIMARY KEY, v LONGTEXT);
@@ -15,8 +15,7 @@ CREATE TABLE IF NOT EXISTS settings (k VARCHAR(50) PRIMARY KEY, v LONGTEXT);
 CREATE TABLE IF NOT EXISTS properties (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255), type VARCHAR(100), address TEXT, 
-    manager_name VARCHAR(100), manager_phone VARCHAR(50),
-    photo VARCHAR(255)
+    manager_name VARCHAR(100), manager_phone VARCHAR(50), photo VARCHAR(255)
 );
 
 CREATE TABLE IF NOT EXISTS units (
@@ -46,9 +45,23 @@ CREATE TABLE IF NOT EXISTS contracts (
 try {
     $pdo->exec($sql);
     
-    // تصحيح اسم الشركة إجبارياً
-    $pdo->prepare("REPLACE INTO settings (k,v) VALUES (?,?)")->execute(['company_name', 'دار الميار للمقاولات']);
-    $pdo->prepare("REPLACE INTO settings (k,v) VALUES (?,?)")->execute(['vat_no', '3000000000']);
+    // إعدادات افتراضية شاملة (الضريبة، السجل، الشعار)
+    $defaults = [
+        'company_name' => 'دار الميار للمقاولات',
+        'vat_no' => '',
+        'vat_enabled' => '0',
+        'vat_percent' => '15',
+        'cr_no' => '', // السجل التجاري
+        'currency' => 'ر.س',
+        'invoice_terms' => 'المبالغ المدفوعة غير مستردة.',
+        'logo' => 'logo.png'
+    ];
+    foreach($defaults as $k=>$v) {
+        $pdo->prepare("INSERT IGNORE INTO settings (k,v) VALUES (?,?)")->execute([$k,$v]);
+    }
+
+    // إنشاء مجلد الصور
+    if (!file_exists('uploads')) { mkdir('uploads', 0777, true); }
 
     // إنشاء الأدمن
     $chk = $pdo->query("SELECT count(*) FROM users WHERE username='admin'")->fetchColumn();
@@ -57,10 +70,9 @@ try {
             ->execute(['admin', password_hash('123456', PASSWORD_DEFAULT), 'المدير العام', 'admin']);
     }
 
-    echo "<div style='background:#0f172a; color:#4ade80; padding:40px; text-align:center; font-family:sans-serif;'>
-            <h1>✅ تم تحديث النظام بنجاح</h1>
-            <p>تم تغيير الاسم إلى (دار الميار للمقاولات)</p>
-            <p>تم إصلاح نوافذ العقود والوحدات</p>
+    echo "<div style='background:#111; color:#4ade80; padding:50px; text-align:center; font-family:tahoma;'>
+            <h1>✅ تم التحديث لنسخة Master Edition</h1>
+            <p>تم تفعيل جداول الإعدادات المتقدمة (الضريبة، السجل، الفواتير).</p>
             <a href='index.php' style='color:white; font-size:20px; text-decoration:underline'>الدخول للنظام</a>
           </div>";
 
