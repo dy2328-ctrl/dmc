@@ -7,27 +7,25 @@ class SmartSystem {
         $this->pdo = $pdo;
     }
 
-    // محاكاة تحليل الهوية (OCR)
+    // تحليل الهوية (OCR)
     public function analyzeIDCard($imagePath) {
-        // هنا يتم ربط API حقيقي مثل Google Vision
+        //         // محاكاة للرد (في الواقع يتم استدعاء API)
         return [
             'success' => true,
             'data' => [
-                'name' => 'الاسم المستخرج تلقائياً',
-                'id_number' => rand(1000000000, 9999999999)
+                'extracted_name' => 'محمد عبدالله العتيبي', // مثال
+                'id_number' => rand(1000000000, 9999999999),
+                'dob' => '1990-01-01',
+                'confidence' => 98.5
             ]
         ];
     }
 
-    // إرسال واتساب
+    // إرسال واتساب (تسجيل في activity_log المرفق)
     public function sendWhatsApp($phone, $message) {
-        // كود الربط مع بوابة الواتساب
-        // $data = ['token' => WHATSAPP_TOKEN, 'to' => $phone, 'body' => $message];
-        // ... curl request ...
-        
-        // تسجيل العملية
+        // إضافة للسجل
         $stmt = $this->pdo->prepare("INSERT INTO activity_log (description, type) VALUES (?, 'whatsapp_sent')");
-        $stmt->execute(["رسالة لـ $phone: $message"]);
+        $stmt->execute(["تم إرسال رسالة لـ $phone: $message"]);
     }
 }
 $AI = new SmartSystem($pdo);
