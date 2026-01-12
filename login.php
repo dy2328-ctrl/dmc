@@ -18,13 +18,15 @@ if($_POST){
     <style>body{background:#1e293b;height:100vh;display:flex;align-items:center;justify-content:center}</style>
 </head>
 <body>
-    <div class="card p-5" style="width:400px">
-        <h3 class="text-center mb-4">دار الميار</h3>
-        <?php if(isset($err)) echo "<div class='alert alert-danger'>$err</div>"; ?>
+<div class="box">
+        <div class="logo"><img src="logo.png" style="max-width:70%"></div>
+        <h2 style="color:white; margin:0 0 10px"><?= $name ?></h2>
+        <p style="color:#888; margin-bottom:40px">منصة إدارة الأملاك الذكية</p>
+        <?php if(isset($err)) echo "<p style='color:#f87171'>$err</p>"; ?>
         <form method="POST">
-            <input type="text" name="user" class="form-control mb-3" placeholder="اسم المستخدم" required>
-            <input type="password" name="pass" class="form-control mb-3" placeholder="كلمة المرور" required>
-            <button class="btn btn-primary w-100">دخول</button>
+            <input type="text" name="user" placeholder="اسم المستخدم" required>
+            <input type="password" name="pass" placeholder="كلمة المرور" required>
+            <button>دخول</button>
         </form>
     </div>
 </body>
