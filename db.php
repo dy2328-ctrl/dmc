@@ -9,15 +9,24 @@ try {
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 } catch(PDOException $e) {
-    // محاولة الإنشاء التلقائي
+    // محاولة الاتصال وإنشاء القاعدة إذا لم توجد
     try {
         $pdo = new PDO("mysql:host=$host;charset=utf8mb4", $user, $pass);
-        $pdo->exec("CREATE DATABASE IF NOT EXISTS `$db` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci");
+        $pdo->exec("CREATE DATABASE IF NOT EXISTS `$db`");
         $pdo->exec("USE `$db`");
-    } catch(PDOException $e2) { die("خطأ الاتصال: " . $e2->getMessage()); }
+    } catch(PDOException $ex) { die("خطأ اتصال"); }
 }
+
 session_start();
 
-function getSet($k) { global $pdo; $s=$pdo->prepare("SELECT v FROM settings WHERE k=?");$s->execute([$k]);return $s->fetchColumn(); }
-function saveSet($k,$v) { global $pdo; $pdo->prepare("REPLACE INTO settings (k,v) VALUES (?,?)")->execute([$k,$v]); }
+function getSet($k) { 
+    global $pdo; 
+    $stmt=$pdo->prepare("SELECT v FROM settings WHERE k=?");
+    $stmt->execute([$k]);
+    return $stmt->fetchColumn();
+}
+function saveSet($k,$v) { 
+    global $pdo; 
+    $pdo->prepare("REPLACE INTO settings (k,v) VALUES (?,?)")->execute([$k,$v]); 
+}
 ?>
