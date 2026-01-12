@@ -16,7 +16,7 @@ try {
     } catch(PDOException $ex) { die("Database Error"); }
 }
 session_start();
-function getSet($k){global $pdo; try{$s=$pdo->prepare("SELECT v FROM settings WHERE k=?");$s->execute([$k]);return $s->fetchColumn();}catch(E $e){return '';}}
+function getSet($k){global $pdo; try{$s=$pdo->prepare("SELECT v FROM settings WHERE k=?");$s->execute([$k]);return $s->fetchColumn();}catch(Exception $e){return '';}}
 function saveSet($k,$v){global $pdo; $pdo->prepare("REPLACE INTO settings (k,v) VALUES (?,?)")->execute([$k,$v]);}
 function upload($f){if($f['error']==0){$n=uniqid().'.'.pathinfo($f['name'],PATHINFO_EXTENSION);move_uploaded_file($f['tmp_name'],'uploads/'.$n);return 'uploads/'.$n;}return null;}
 ?>
