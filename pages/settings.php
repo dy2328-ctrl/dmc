@@ -84,4 +84,16 @@ $logo = $sets['logo'] ?? 'logo.png';
         </div>
 
     </div>
+    <h4 style="color:var(--primary); margin:30px 0 15px; border-bottom:1px dashed #333; padding-bottom:10px">4. النسخ الاحتياطي وصيانة النظام</h4>
+        <div class="card" style="padding:20px; background:#1a1a1a; margin:0">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <h4 style="margin:0; color:white">نسخة احتياطية كاملة (Backup)</h4>
+                    <p style="color:#888; font-size:13px; margin-top:5px">تحميل نسخة كاملة من قاعدة البيانات والملفات للحفاظ على أمان بياناتك.</p>
+                </div>
+                <a href="backup.php" class="btn btn-primary" target="_blank">
+                    <i class="fa-solid fa-download"></i> تحميل النسخة الآن
+                </a>
+            </div>
+        </div>
 </form>
