@@ -1,5 +1,4 @@
 <?php
-// معالجة الإضافة
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_prop'])) {
     check_csrf();
     $stmt = $pdo->prepare("INSERT INTO properties (name, manager, phone, address) VALUES (?,?,?,?)");
@@ -10,7 +9,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_prop'])) {
 <div class="card">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
         <h3>🏙️ إدارة العقارات</h3>
-        <button onclick="document.getElementById('addPropModal').style.display='flex'" class="btn"><i class="fa-solid fa-plus"></i> إضافة عقار</button>
+        <button onclick="document.getElementById('propModal').style.display='flex'" class="btn btn-primary">
+            <i class="fa-solid fa-plus"></i> إضافة عقار جديد
+        </button>
     </div>
     <table>
         <thead><tr><th>اسم العقار</th><th>العنوان</th><th>المدير</th><th>الجوال</th><th>إجراء</th></tr></thead>
@@ -30,20 +31,33 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_prop'])) {
     </table>
 </div>
 
-<div id="addPropModal" class="modal">
+<div id="propModal" class="modal">
     <div class="modal-content">
-        <button class="btn-close" style="position:absolute; left:20px; top:20px; background:none; border:none; color:red; cursor:pointer" onclick="this.parentElement.parentElement.style.display='none'">✕</button>
-        <h2>إضافة عقار جديد</h2>
+        <div class="close-icon" onclick="document.getElementById('propModal').style.display='none'"><i class="fa-solid fa-xmark"></i></div>
+        <div class="modal-header"><div class="modal-title">إضافة عقار جديد</div></div>
+        
         <form method="POST">
             <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <input type="hidden" name="add_prop" value="1">
-            <label>اسم العقار</label><input type="text" name="name" class="inp" required>
-            <label>العنوان</label><input type="text" name="address" class="inp">
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
-                <div><label>اسم المدير</label><input type="text" name="manager" class="inp"></div>
-                <div><label>رقم الجوال</label><input type="text" name="phone" class="inp"></div>
+            
+            <div class="inp-group">
+                <label class="inp-label">اسم العقار</label>
+                <input type="text" name="name" class="inp" placeholder="مثال: عمارة النخيل" required>
             </div>
-            <button class="btn" style="width:100%">حفظ البيانات</button>
+            
+            <div class="inp-group">
+                <label class="inp-label">العنوان</label>
+                <input type="text" name="address" class="inp" placeholder="المدينة، الحي، الشارع">
+            </div>
+
+            <div class="inp-grid">
+                <div><label class="inp-label">مدير العقار</label><input type="text" name="manager" class="inp"></div>
+                <div><label class="inp-label">رقم التواصل</label><input type="text" name="phone" class="inp"></div>
+            </div>
+
+            <button class="btn btn-primary" style="width:100%; justify-content:center; margin-top:10px">
+                <i class="fa-solid fa-check"></i> حفظ العقار
+            </button>
         </form>
     </div>
 </div>
