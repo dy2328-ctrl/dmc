@@ -1,62 +1,93 @@
 <?php
 if(isset($_POST['save_settings'])){
     check_csrf();
-    $keys = ['company_name','cr_no','vat_no','vat_percent','address','phone','email', 'invoice_terms', 'currency', 'bank_info'];
+    $keys = ['company_name','phone','email','address','currency','vat_no','vat_percent','cr_no','invoice_prefix','invoice_terms','alert_days'];
     foreach($keys as $k){ if(isset($_POST[$k])) { $pdo->prepare("REPLACE INTO settings (k,v) VALUES (?,?)")->execute([$k, $_POST[$k]]); } }
-    
     if(!empty($_FILES['logo']['name'])){
         $path = upload($_FILES['logo']);
         $pdo->prepare("REPLACE INTO settings (k,v) VALUES ('logo',?)")->execute([$path]);
     }
-    echo "<script>alert('تم حفظ الإعدادات'); window.location='index.php?p=settings';</script>";
+    echo "<script>window.location='index.php?p=settings';</script>";
 }
 $sets=[]; $q=$pdo->query("SELECT * FROM settings"); while($r=$q->fetch()) $sets[$r['k']]=$r['v'];
+$logo = $sets['logo'] ?? 'logo.png';
 ?>
 
-<div class="card">
-    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #222; padding-bottom:20px; margin-bottom:30px">
-        <h2>⚙️ إعدادات النظام المتقدمة</h2>
-        <button onclick="document.getElementById('settingsForm').submit()" class="btn btn-primary">
-            <i class="fa-solid fa-save"></i> حفظ التغييرات
-        </button>
+<form method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+    <input type="hidden" name="save_settings" value="1">
+    
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+        <h2 style="font-weight:800">⚙ الإعدادات</h2>
+        <button class="btn btn-primary"><i class="fa-solid fa-save"></i> حفظ الإعدادات</button>
     </div>
 
-    <form id="settingsForm" method="POST" enctype="multipart/form-data">
-        <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-        <input type="hidden" name="save_settings" value="1">
+    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:20px;">
+        
+        <div class="card" style="padding:0; overflow:hidden; border:none;">
+            <div style="background:#f59e0b; padding:15px; color:white; font-weight:bold"><i class="fa-solid fa-coins"></i> إعدادات العملة</div>
+            <div style="padding:20px;">
+                <label class="inp-label">رمز العملة</label>
+                <input type="text" name="currency" class="inp" value="<?= $sets['currency'] ?? 'SAR' ?>">
+                <label class="inp-label">كود العملة</label>
+                <input type="text" class="inp" value="ر.س" disabled>
+            </div>
+        </div>
 
-        <h4 style="color:var(--primary); margin-bottom:15px; border-bottom:1px dashed #333; padding-bottom:10px">1. هوية المنشأة</h4>
-        <div style="display:flex; gap:30px; margin-bottom:30px">
-            <div style="width:120px; text-align:center">
-                <div style="width:100px; height:100px; background:#111; border:1px solid #333; border-radius:50%; margin-bottom:10px; overflow:hidden; display:flex; align-items:center; justify-content:center">
-                    <img src="<?= $sets['logo'] ?? 'logo.png' ?>" style="max-width:100%; max-height:100%">
+        <div class="card" style="padding:0; overflow:hidden; border:none;">
+            <div style="background:#10b981; padding:15px; color:white; font-weight:bold"><i class="fa-solid fa-percent"></i> إعدادات الضريبة</div>
+            <div style="padding:20px;">
+                <label class="inp-label">الرقم الضريبي</label>
+                <input type="text" name="vat_no" class="inp" value="<?= $sets['vat_no'] ?? '' ?>">
+                <label class="inp-label">السجل التجاري</label>
+                <input type="text" name="cr_no" class="inp" value="<?= $sets['cr_no'] ?? '' ?>">
+                <label class="inp-label">نسبة الضريبة %</label>
+                <input type="number" name="vat_percent" class="inp" value="<?= $sets['vat_percent'] ?? '15' ?>">
+                
+                <div style="margin-top:15px; background:#1a1a1a; padding:10px; border-radius:8px; border:1px solid #333">
+                    <input type="checkbox" checked disabled> السعر شامل الضريبة
                 </div>
-                <input type="file" name="logo" id="logoUpload" style="display:none">
-                <label for="logoUpload" class="btn btn-dark" style="padding:5px 10px; font-size:12px; cursor:pointer">رفع شعار</label>
-            </div>
-            <div style="flex:1" class="inp-grid">
-                <div><label class="inp-label">اسم المنشأة</label><input type="text" name="company_name" class="inp" value="<?= $sets['company_name']??'' ?>"></div>
-                <div><label class="inp-label">رقم السجل التجاري</label><input type="text" name="cr_no" class="inp" value="<?= $sets['cr_no']??'' ?>"></div>
-                <div><label class="inp-label">رقم الجوال</label><input type="text" name="phone" class="inp" value="<?= $sets['phone']??'' ?>"></div>
-                <div><label class="inp-label">العنوان الوطني</label><input type="text" name="address" class="inp" value="<?= $sets['address']??'' ?>"></div>
             </div>
         </div>
 
-        <h4 style="color:var(--primary); margin-bottom:15px; border-bottom:1px dashed #333; padding-bottom:10px">2. بيانات الفاتورة الإلكترونية (ZATCA)</h4>
-        <div class="inp-grid">
-            <div><label class="inp-label">الرقم الضريبي (VAT ID)</label><input type="text" name="vat_no" class="inp" placeholder="3xxxxxxxxxxxxxx" value="<?= $sets['vat_no']??'' ?>"></div>
-            <div><label class="inp-label">نسبة الضريبة (%)</label><input type="number" name="vat_percent" class="inp" value="<?= $sets['vat_percent']??'15' ?>"></div>
-            <div><label class="inp-label">عملة النظام</label><input type="text" name="currency" class="inp" value="<?= $sets['currency']??'SAR' ?>"></div>
+        <div class="card" style="padding:0; overflow:hidden; border:none;">
+            <div style="background:#4f46e5; padding:15px; color:white; font-weight:bold"><i class="fa-solid fa-building"></i> معلومات الشركة</div>
+            <div style="padding:20px;">
+                <label class="inp-label">اسم الشركة</label>
+                <input type="text" name="company_name" class="inp" value="<?= $sets['company_name'] ?? '' ?>">
+                <label class="inp-label">الهاتف</label>
+                <input type="text" name="phone" class="inp" value="<?= $sets['phone'] ?? '' ?>">
+                <label class="inp-label">البريد الإلكتروني</label>
+                <input type="text" name="email" class="inp" value="<?= $sets['email'] ?? '' ?>">
+                <label class="inp-label">العنوان</label>
+                <input type="text" name="address" class="inp" value="<?= $sets['address'] ?? '' ?>">
+                
+                <div style="text-align:center; margin-top:15px; border:1px dashed #444; padding:10px; border-radius:10px">
+                    <img src="<?= $logo ?>" style="height:50px; display:block; margin:0 auto 5px">
+                    <input type="file" name="logo" style="font-size:12px">
+                </div>
+            </div>
         </div>
 
-        <h4 style="color:var(--primary); margin:30px 0 15px; border-bottom:1px dashed #333; padding-bottom:10px">3. تذييل الفاتورة والحسابات البنكية</h4>
-        <div class="inp-group">
-            <label class="inp-label">بيانات الحساب البنكي (تظهر في العقد والفاتورة)</label>
-            <textarea name="bank_info" class="inp" rows="2" placeholder="اسم البنك: ... الايبان: ..."><?= $sets['bank_info']??'' ?></textarea>
+        <div class="card" style="padding:0; overflow:hidden; border:none;">
+            <div style="background:#ef4444; padding:15px; color:white; font-weight:bold"><i class="fa-solid fa-bell"></i> إعدادات التنبيهات</div>
+            <div style="padding:20px;">
+                <label class="inp-label">التنبيه قبل موعد المطالبة (يوم)</label>
+                <input type="number" name="alert_days" class="inp" value="<?= $sets['alert_days'] ?? '30' ?>">
+                <label class="inp-label">التنبيه قبل انتهاء العقد (يوم)</label>
+                <input type="number" class="inp" value="30" disabled>
+            </div>
         </div>
-        <div class="inp-group">
-            <label class="inp-label">شروط وأحكام (أسفل الفاتورة)</label>
-            <textarea name="invoice_terms" class="inp" rows="3"><?= $sets['invoice_terms']??'' ?></textarea>
+
+        <div class="card" style="padding:0; overflow:hidden; border:none;">
+            <div style="background:#8b5cf6; padding:15px; color:white; font-weight:bold"><i class="fa-solid fa-file-invoice"></i> إعدادات الفواتير</div>
+            <div style="padding:20px;">
+                <label class="inp-label">بادئة رقم الفاتورة</label>
+                <input type="text" name="invoice_prefix" class="inp" value="<?= $sets['invoice_prefix'] ?? 'INV-' ?>">
+                <label class="inp-label">ملاحظات الفاتورة</label>
+                <textarea name="invoice_terms" class="inp" rows="3"><?= $sets['invoice_terms'] ?? '' ?></textarea>
+            </div>
         </div>
-    </form>
-</div>
+
+    </div>
+</form>
