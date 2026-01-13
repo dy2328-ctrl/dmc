@@ -1,101 +1,100 @@
 <?php
-// 1. منطق الفتح
-$show_modal = false;
-if (isset($_GET['op']) && $_GET['op'] == 'add') {
-    $show_modal = true;
-}
-
-// 2. معالجة الحفظ
+// 1. كود الحفظ (طلب جديد)
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_maint'])) {
+    
+    // جلب معرف العقار تلقائياً
     $u = $pdo->query("SELECT property_id FROM units WHERE id=".$_POST['uid'])->fetch();
     $pid = $u ? $u['property_id'] : 0;
     
     $stmt = $pdo->prepare("INSERT INTO maintenance (property_id, unit_id, vendor_id, description, cost, request_date, status) VALUES (?,?,?,?,?, CURDATE(), 'pending')");
     $stmt->execute([$pid, $_POST['uid'], $_POST['vid'], $_POST['desc'], $_POST['cost']]);
+    
     echo "<script>window.location='index.php?p=maintenance';</script>";
-    exit;
 }
 ?>
+
+<style>
+    .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center; }
+    .modal-content { background:#1a1a1a; padding:25px; border-radius:15px; width:500px; max-width:90%; border:1px solid #444; }
+    .close-icon { float:left; cursor:pointer; font-size:20px; color:#aaa; }
+</style>
 
 <div class="card">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
         <h3>🛠️ طلبات الصيانة</h3>
-        <a href="index.php?p=maintenance&op=add" class="btn btn-primary" style="text-decoration:none">
+        <button onclick="openMaintModal()" class="btn btn-primary">
             <i class="fa-solid fa-plus"></i> تسجيل طلب جديد
-        </a>
+        </button>
     </div>
     
-    <table style="width:100%; border-collapse:collapse">
-        <thead>
-            <tr style="background:#222; text-align:right">
-                <th style="padding:15px">رقم الطلب</th>
-                <th style="padding:15px">الوحدة</th>
-                <th style="padding:15px">الوصف</th>
-                <th style="padding:15px">المقاول</th>
-                <th style="padding:15px">الحالة</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php 
-            $reqs = $pdo->query("SELECT m.*, u.unit_name, v.name as vname FROM maintenance m JOIN units u ON m.unit_id=u.id LEFT JOIN vendors v ON m.vendor_id=v.id ORDER BY m.id DESC");
-            while($r = $reqs->fetch()): 
-            ?>
-            <tr style="border-bottom:1px solid #333">
-                <td style="padding:15px">#<?= $r['id'] ?></td>
-                <td style="padding:15px"><?= $r['unit_name'] ?></td>
-                <td style="padding:15px"><?= $r['description'] ?></td>
-                <td style="padding:15px"><?= $r['vname'] ?: '-' ?></td>
-                <td style="padding:15px">
-                    <span class="badge" style="background:<?= $r['status']=='pending'?'#f59e0b':'#10b981' ?>"><?= $r['status'] ?></span>
-                </td>
-            </tr>
-            <?php endwhile; ?>
-        </tbody>
-    </table>
+    <?php 
+    $reqs = $pdo->query("SELECT m.*, u.unit_name, v.name as vname FROM maintenance m JOIN units u ON m.unit_id=u.id LEFT JOIN vendors v ON m.vendor_id=v.id ORDER BY m.id DESC");
+    if($reqs->rowCount() == 0):
+    ?>
+        <div style="text-align:center; padding:40px; color:#666">
+            <p>لا توجد طلبات صيانة حالياً</p>
+        </div>
+    <?php else: ?>
+        <table>
+            <thead><tr><th>الوحدة</th><th>المشكلة</th><th>المقاول</th><th>التكلفة</th><th>الحالة</th></tr></thead>
+            <tbody>
+                <?php while($r = $reqs->fetch()): ?>
+                <tr>
+                    <td style="font-weight:bold"><?= $r['unit_name'] ?></td>
+                    <td><?= $r['description'] ?></td>
+                    <td><?= $r['vname'] ?: '-' ?></td>
+                    <td><?= number_format($r['cost']) ?></td>
+                    <td><span class="badge" style="background:<?= $r['status']=='pending'?'#f59e0b':'#10b981' ?>"><?= $r['status'] ?></span></td>
+                </tr>
+                <?php endwhile; ?>
+            </tbody>
+        </table>
+    <?php endif; ?>
 </div>
 
-<?php if($show_modal): ?>
-<div style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:999999; display:flex; justify-content:center; align-items:center;">
-    <div style="background:#1f1f1f; padding:30px; border-radius:15px; width:500px; border:1px solid #444; box-shadow: 0 0 50px rgba(0,0,0,0.8); animation: fadeIn 0.3s">
+<div id="maintModal" class="modal">
+    <div class="modal-content">
+        <div class="close-icon" onclick="document.getElementById('maintModal').style.display='none'"><i class="fa-solid fa-xmark"></i></div>
+        <div class="modal-header"><div class="modal-title">تسجيل طلب صيانة</div></div>
         
-        <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
-            <h3 style="margin:0; color:#fff">تسجيل طلب صيانة</h3>
-            <a href="index.php?p=maintenance" style="color:#fff; font-size:20px; text-decoration:none;">
-                <i class="fa-solid fa-xmark"></i>
-            </a>
-        </div>
-        
-        <form method="POST" action="index.php?p=maintenance">
+        <form method="POST">
             <input type="hidden" name="save_maint" value="1">
             
-            <div style="margin-bottom:15px">
-                <label style="color:#bbb; display:block; margin-bottom:5px">الوحدة المتضررة</label>
-                <select name="uid" class="inp" style="width:100%; padding:10px; background:#333; color:white; border:1px solid #555" required>
-                    <option value="">-- اختر --</option>
+            <div class="inp-group">
+                <label class="inp-label">الوحدة المتضررة</label>
+                <select name="uid" class="inp" required>
+                    <option value="">-- اختر الوحدة --</option>
                     <?php $us=$pdo->query("SELECT * FROM units"); while($u=$us->fetch()) echo "<option value='{$u['id']}'>{$u['unit_name']}</option>"; ?>
                 </select>
             </div>
             
-            <div style="margin-bottom:15px">
-                <label style="color:#bbb; display:block; margin-bottom:5px">المقاول (اختياري)</label>
-                <select name="vid" class="inp" style="width:100%; padding:10px; background:#333; color:white; border:1px solid #555">
-                    <option value="0">-- اختر --</option>
+            <div class="inp-group">
+                <label class="inp-label">المقاول (اختياري)</label>
+                <select name="vid" class="inp">
+                    <option value="0">-- اختر المقاول --</option>
                     <?php $vs=$pdo->query("SELECT * FROM vendors"); while($v=$vs->fetch()) echo "<option value='{$v['id']}'>{$v['name']}</option>"; ?>
                 </select>
             </div>
-            
-            <div style="margin-bottom:15px">
-                <label style="color:#bbb; display:block; margin-bottom:5px">الوصف</label>
-                <textarea name="desc" class="inp" style="width:100%; padding:10px; background:#333; color:white; border:1px solid #555; height:80px" required></textarea>
+
+            <div class="inp-group">
+                <label class="inp-label">وصف المشكلة</label>
+                <textarea name="desc" class="inp" style="height:80px" required></textarea>
             </div>
-            
-            <div style="margin-bottom:25px">
-                <label style="color:#bbb; display:block; margin-bottom:5px">التكلفة</label>
-                <input type="number" name="cost" class="inp" style="width:100%; padding:10px; background:#333; color:white; border:1px solid #555">
+
+            <div class="inp-group">
+                <label class="inp-label">التكلفة التقديرية</label>
+                <input type="number" name="cost" class="inp">
             </div>
-            
-            <button class="btn btn-primary" style="width:100%; justify-content:center; padding:12px">حفظ الطلب</button>
+
+            <button class="btn btn-primary" style="width:100%; justify-content:center; margin-top:15px">
+                <i class="fa-solid fa-check"></i> حفظ الطلب
+            </button>
         </form>
     </div>
 </div>
-<?php endif; ?>
+
+<script>
+    function openMaintModal() {
+        document.getElementById('maintModal').style.display='flex';
+    }
+</script>
