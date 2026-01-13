@@ -3,26 +3,26 @@
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_maint'])) {
     $u = $pdo->query("SELECT property_id FROM units WHERE id=".$_POST['uid'])->fetch();
     $pid = $u ? $u['property_id'] : 0;
-    $pdo->prepare("INSERT INTO maintenance (property_id, unit_id, vendor_id, description, cost, request_date, status) VALUES (?,?,?,?,?, CURDATE(), 'pending')")->execute([$pid, $_POST['uid'], $_POST['vid'], $_POST['desc'], $_POST['cost']]);
-    echo "<script>window.location='index.php?p=maintenance';</script>";
+    
+    // استخدام try-catch لتجنب توقف الصفحة في حال وجود خطأ
+    try {
+        $pdo->prepare("INSERT INTO maintenance (property_id, unit_id, vendor_id, description, cost, request_date, status) VALUES (?,?,?,?,?, CURDATE(), 'pending')")->execute([$pid, $_POST['uid'], $_POST['vid'], $_POST['desc'], $_POST['cost']]);
+        echo "<script>window.location='index.php?p=maintenance';</script>";
+    } catch(PDOException $e) {
+        echo "<script>alert('حدث خطأ في قاعدة البيانات');</script>";
+    }
 }
 ?>
 
 <style>
-    /* نفس الستايل لضمان العمل */
     .modal-overlay {
         display: none; 
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.85); z-index: 999999;
+        background: rgba(0,0,0,0.85); z-index: 9999999;
         justify-content: center; align-items: center;
         backdrop-filter: blur(5px);
     }
     
-    /* إظهار النافذة عند الضغط على الرابط */
-    #maintModal:target {
-        display: flex !important;
-    }
-
     .modal-box {
         background: #1f1f1f; padding: 30px; border-radius: 15px;
         width: 500px; border: 1px solid #444; position: relative;
@@ -30,16 +30,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_maint'])) {
     }
     .close-btn {
         position: absolute; top: 15px; left: 15px;
-        color: #aaa; font-size: 20px; text-decoration: none;
+        color: #aaa; font-size: 20px; text-decoration: none; cursor: pointer;
     }
 </style>
 
 <div class="card">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
         <h3>🛠️ طلبات الصيانة</h3>
-        <a href="#maintModal" class="btn btn-primary" style="text-decoration:none">
+        <button onclick="openMaintModal()" class="btn btn-primary" style="border:none; cursor:pointer">
             <i class="fa-solid fa-plus"></i> تسجيل طلب جديد
-        </a>
+        </button>
     </div>
     
     <table style="width:100%; border-collapse:collapse">
@@ -73,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_maint'])) {
 
 <div id="maintModal" class="modal-overlay">
     <div class="modal-box">
-        <a href="#" class="close-btn"><i class="fa-solid fa-xmark"></i></a>
+        <a onclick="closeMaintModal()" class="close-btn"><i class="fa-solid fa-xmark"></i></a>
         
         <h3 style="margin-top:0; color:white; margin-bottom:20px">تسجيل طلب صيانة</h3>
         
@@ -110,3 +110,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_maint'])) {
         </form>
     </div>
 </div>
+
+<script>
+    function openMaintModal() {
+        document.getElementById('maintModal').style.display = 'flex';
+    }
+    
+    function closeMaintModal() {
+        document.getElementById('maintModal').style.display = 'none';
+    }
+</script>
