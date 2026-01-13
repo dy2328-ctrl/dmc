@@ -43,10 +43,6 @@ $logo = $sets['logo'] ?? 'logo.png';
                 <input type="text" name="cr_no" class="inp" value="<?= $sets['cr_no'] ?? '' ?>">
                 <label class="inp-label">نسبة الضريبة %</label>
                 <input type="number" name="vat_percent" class="inp" value="<?= $sets['vat_percent'] ?? '15' ?>">
-                
-                <div style="margin-top:15px; background:#1a1a1a; padding:10px; border-radius:8px; border:1px solid #333">
-                    <input type="checkbox" checked disabled> السعر شامل الضريبة
-                </div>
             </div>
         </div>
 
@@ -74,8 +70,6 @@ $logo = $sets['logo'] ?? 'logo.png';
             <div style="padding:20px;">
                 <label class="inp-label">التنبيه قبل موعد المطالبة (يوم)</label>
                 <input type="number" name="alert_days" class="inp" value="<?= $sets['alert_days'] ?? '30' ?>">
-                <label class="inp-label">التنبيه قبل انتهاء العقد (يوم)</label>
-                <input type="number" class="inp" value="30" disabled>
             </div>
         </div>
 
