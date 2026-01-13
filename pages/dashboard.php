@@ -1,25 +1,25 @@
 <?php
-// استعلامات آمنة تعيد 0 بدلاً من NULL
+// استخدام COALESCE لتحويل القيم الفارغة إلى أصفار
 $income = $pdo->query("SELECT COALESCE(SUM(amount),0) FROM payments WHERE status='paid'")->fetchColumn();
 $pending = $pdo->query("SELECT COALESCE(SUM(amount),0) FROM payments WHERE status!='paid'")->fetchColumn();
 $con_count = $pdo->query("SELECT count(*) FROM contracts WHERE status='active'")->fetchColumn();
 $total_units = $pdo->query("SELECT count(*) FROM units")->fetchColumn();
 $rented_units = $pdo->query("SELECT count(*) FROM units WHERE status='rented'")->fetchColumn();
 
-// منع القسمة على صفر
+// تجنب القسمة على صفر
 $occ_rate = ($total_units > 0) ? ($rented_units / $total_units) * 100 : 0;
 ?>
 
-<div class="card" style="background:linear-gradient(135deg, rgba(99,102,241,0.15), rgba(0,0,0,0)); border-color:var(--primary)">
+<div class="card" style="background:linear-gradient(135deg, rgba(99,102,241,0.15), rgba(0,0,0,0)); border-color:var(--primary); margin-bottom:30px">
     <div style="display:flex; align-items:center; gap:20px">
         <div style="width:50px; height:50px; background:var(--primary); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px; color:white; box-shadow:0 0 20px var(--primary)">
             <i class="fa-solid fa-robot"></i>
         </div>
         <div>
-            <h3 style="margin:0 0 5px; color:white">حالة النظام</h3>
+            <h3 style="margin:0 0 5px; color:white">ملخص النظام</h3>
             <p style="margin:0; color:#ccc;">
-                نسبة الإشغال <b><?= round($occ_rate) ?>%</b>. 
-                لديك <b><?= $con_count ?></b> عقود نشطة، ومبالغ معلقة بقيمة <span style="color:#ef4444; font-weight:bold"><?= number_format($pending) ?></span> ريال.
+                أهلاً بك. نسبة الإشغال الحالية <b><?= round($occ_rate) ?>%</b>. 
+                لديك <b><?= $con_count ?></b> عقود نشطة.
             </p>
         </div>
     </div>
@@ -43,24 +43,54 @@ $occ_rate = ($total_units > 0) ? ($rented_units / $total_units) * 100 : 0;
 <div style="display:grid; grid-template-columns: 2fr 1fr; gap:30px">
     <div class="card">
         <h3>الأداء المالي</h3>
-        <canvas id="chart1" height="120"></canvas>
+        <div style="height:250px"><canvas id="chart1"></canvas></div>
     </div>
     <div class="card">
         <h3>حالة الوحدات</h3>
-        <canvas id="chart2" height="200"></canvas>
+        <div style="height:250px"><canvas id="chart2"></canvas></div>
     </div>
 </div>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // رسم بياني 1
     new Chart(document.getElementById('chart1'), {
         type: 'line',
         data: {
             labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'],
-            datasets: [{ label: 'الدخل', data: [0, <?= $income/5 ?>, <?= $income/2 ?>, <?= $income ?>], borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.1)', fill: true, tension: 0.4 }]
-        }, options: { scales: { y: { grid: { color: '#222' } }, x: { grid: { display: false } } }, plugins: { legend: { display: false } } }
+            datasets: [{ 
+                label: 'الدخل', 
+                data: [0, <?= $income/4 ?>, <?= $income/2 ?>, <?= $income ?>], 
+                borderColor: '#6366f1', 
+                backgroundColor: 'rgba(99,102,241,0.1)', 
+                fill: true, 
+                tension: 0.4 
+            }]
+        }, 
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false,
+            scales: { y: { grid: { color: '#222' } }, x: { grid: { display: false } } }, 
+            plugins: { legend: { display: false } } 
+        }
     });
+
+    // رسم بياني 2
     new Chart(document.getElementById('chart2'), {
         type: 'doughnut',
-        data: { labels: ['مؤجر', 'شاغر'], datasets: [{ data: [<?= $rented_units ?>, <?= $total_units - $rented_units ?>], backgroundColor: ['#10b981', '#222'], borderWidth: 0 }] }, options: { cutout: '75%' }
+        data: { 
+            labels: ['مؤجر', 'شاغر'], 
+            datasets: [{ 
+                data: [<?= $rented_units ?>, <?= $total_units - $rented_units ?>], 
+                backgroundColor: ['#10b981', '#222'], 
+                borderWidth: 0 
+            }] 
+        }, 
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            cutout: '75%' 
+        }
     });
+});
 </script>
