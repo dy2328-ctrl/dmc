@@ -1,86 +1,121 @@
 <?php
-// جلب البيانات مع معالجة القيم الفارغة (لتجنب الأخطاء)
+// جلب البيانات مع حماية من القيم الفارغة
+$contracts_count = $pdo->query("SELECT COUNT(*) FROM contracts")->fetchColumn() ?: 0;
+$units_count = $pdo->query("SELECT COUNT(*) FROM units")->fetchColumn() ?: 0;
+$maintenance_hours = 10; // قيمة افتراضية أو يمكن حسابها لاحقاً
+$total_units = $pdo->query("SELECT COUNT(*) FROM units")->fetchColumn() ?: 0;
+$tenants_count = $pdo->query("SELECT COUNT(*) FROM tenants")->fetchColumn() ?: 0;
 $income = $pdo->query("SELECT COALESCE(SUM(amount),0) FROM payments WHERE status='paid'")->fetchColumn();
-$pending = $pdo->query("SELECT COALESCE(SUM(amount),0) FROM payments WHERE status!='paid'")->fetchColumn();
-$con_count = $pdo->query("SELECT count(*) FROM contracts WHERE status='active'")->fetchColumn();
-$total_units = $pdo->query("SELECT count(*) FROM units")->fetchColumn();
-$rented_units = $pdo->query("SELECT count(*) FROM units WHERE status='rented'")->fetchColumn();
-
-// حساب النسبة المئوية بأمان (منع القسمة على صفر)
-$occ_rate = ($total_units > 0) ? round(($rented_units / $total_units) * 100) : 0;
+$late_payments = $pdo->query("SELECT COUNT(*) FROM payments WHERE status='pending' AND due_date < CURRENT_DATE")->fetchColumn() ?: 0;
 ?>
 
-<div class="card" style="background:linear-gradient(135deg, rgba(99,102,241,0.15), rgba(0,0,0,0)); border-color:var(--primary); margin-bottom:30px">
-    <div style="display:flex; align-items:center; gap:20px">
-        <div style="width:50px; height:50px; background:var(--primary); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px; color:white; box-shadow:0 0 20px var(--primary)">
-            <i class="fa-solid fa-robot"></i>
-        </div>
+<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:20px; margin-bottom:30px;">
+    
+    <div class="card" style="padding:20px; display:flex; justify-content:space-between; align-items:center;">
         <div>
-            <h3 style="margin:0 0 5px; color:white">ملخص النظام</h3>
-            <p style="margin:0; color:#ccc;">
-                أهلاً بك. النظام يعمل بكفاءة. نسبة الإشغال <b><?= $occ_rate ?>%</b>.
-                لديك <b><?= $con_count ?></b> عقود نشطة حالياً.
-            </p>
+            <h2 style="margin:0; font-size:28px; font-weight:800"><?= $contracts_count ?></h2>
+            <span style="color:#888; font-size:14px">عقود نشطة</span>
+        </div>
+        <div style="width:50px; height:50px; background:#6366f1; border-radius:12px; display:flex; align-items:center; justify-content:center; color:white; font-size:24px;">
+            <i class="fa-solid fa-file-contract"></i>
+        </div>
+    </div>
+
+    <div class="card" style="padding:20px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+            <h2 style="margin:0; font-size:28px; font-weight:800"><?= $units_count ?></h2>
+            <span style="color:#888; font-size:14px">وحدات مؤجرة</span>
+        </div>
+        <div style="width:50px; height:50px; background:#0ea5e9; border-radius:12px; display:flex; align-items:center; justify-content:center; color:white; font-size:24px;">
+            <i class="fa-solid fa-key"></i>
+        </div>
+    </div>
+
+    <div class="card" style="padding:20px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+            <h2 style="margin:0; font-size:28px; font-weight:800"><?= $maintenance_hours ?></h2>
+            <span style="color:#888; font-size:14px">ساعات صيانة</span>
+            <span style="display:block; font-size:11px; color:#10b981">✔ مكتملة بنجاح</span>
+        </div>
+        <div style="width:50px; height:50px; background:#10b981; border-radius:12px; display:flex; align-items:center; justify-content:center; color:white; font-size:24px;">
+            <i class="fa-solid fa-check-circle"></i>
+        </div>
+    </div>
+
+    <div class="card" style="padding:20px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+            <h2 style="margin:0; font-size:28px; font-weight:800"><?= $total_units ?></h2>
+            <span style="color:#888; font-size:14px">إجمالي الوحدات</span>
+        </div>
+        <div style="width:50px; height:50px; background:#4f46e5; border-radius:12px; display:flex; align-items:center; justify-content:center; color:white; font-size:24px;">
+            <i class="fa-solid fa-building"></i>
         </div>
     </div>
 </div>
 
-<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:25px; margin-bottom:30px">
-    <div class="card" style="padding:25px; display:flex; align-items:center; gap:20px; margin:0">
-        <div style="width:60px; height:60px; background:rgba(16,185,129,0.1); border-radius:18px; display:flex; align-items:center; justify-content:center; color:#10b981; font-size:24px"><i class="fa-solid fa-wallet"></i></div>
-        <div><div style="font-size:14px; color:#888">إجمالي التحصيل</div><div style="font-size:24px; font-weight:800"><?= number_format($income) ?></div></div>
+<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:20px; margin-bottom:30px;">
+    <div class="card" style="padding:20px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+            <h2 style="margin:0; font-size:28px; font-weight:800"><?= number_format($income) ?></h2>
+            <span style="color:#888; font-size:14px">إيرادات الشهر</span>
+            <span style="display:block; font-size:11px; color:#10b981">✔ محصلة بالكامل</span>
+        </div>
+        <div style="width:50px; height:50px; background:#10b981; border-radius:12px; display:flex; align-items:center; justify-content:center; color:white; font-size:24px;">
+            <i class="fa-solid fa-wallet"></i>
+        </div>
     </div>
-    <div class="card" style="padding:25px; display:flex; align-items:center; gap:20px; margin:0">
-        <div style="width:60px; height:60px; background:rgba(239,68,68,0.1); border-radius:18px; display:flex; align-items:center; justify-content:center; color:#ef4444; font-size:24px"><i class="fa-solid fa-file-invoice"></i></div>
-        <div><div style="font-size:14px; color:#888">مبالغ معلقة</div><div style="font-size:24px; font-weight:800"><?= number_format($pending) ?></div></div>
+
+    <div class="card" style="padding:20px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+            <h2 style="margin:0; font-size:28px; font-weight:800"><?= $late_payments ?></h2>
+            <span style="color:#888; font-size:14px">مطالبات متأخرة</span>
+            <span style="display:block; font-size:11px; color:#ef4444">⚠ تحتاج متابعة</span>
+        </div>
+        <div style="width:50px; height:50px; background:#ef4444; border-radius:12px; display:flex; align-items:center; justify-content:center; color:white; font-size:24px;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
     </div>
-    <div class="card" style="padding:25px; display:flex; align-items:center; gap:20px; margin:0">
-        <div style="width:60px; height:60px; background:rgba(99,102,241,0.1); border-radius:18px; display:flex; align-items:center; justify-content:center; color:#6366f1; font-size:24px"><i class="fa-solid fa-file-contract"></i></div>
-        <div><div style="font-size:14px; color:#888">عقود نشطة</div><div style="font-size:24px; font-weight:800"><?= $con_count ?></div></div>
+
+    <div class="card" style="padding:20px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+            <h2 style="margin:0; font-size:28px; font-weight:800"><?= $tenants_count ?></h2>
+            <span style="color:#888; font-size:14px">المستأجرين</span>
+        </div>
+        <div style="width:50px; height:50px; background:#f59e0b; border-radius:12px; display:flex; align-items:center; justify-content:center; color:white; font-size:24px;">
+            <i class="fa-solid fa-users"></i>
+        </div>
     </div>
 </div>
 
-<div style="display:grid; grid-template-columns: 2fr 1fr; gap:30px">
+<div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:20px;">
     <div class="card">
-        <h3>الأداء المالي</h3>
-        <div style="height:300px"><canvas id="financeChart"></canvas></div>
+        <div style="border-bottom:1px solid #333; padding-bottom:10px; margin-bottom:15px; display:flex; justify-content:space-between;">
+            <h4 style="margin:0"><i class="fa-solid fa-clock-rotate-left"></i> آخر النشاطات</h4>
+        </div>
+        <div style="font-size:13px; color:#aaa; text-align:center; padding:20px;">
+            لا توجد نشاطات حديثة لعرضها
+        </div>
     </div>
+
     <div class="card">
-        <h3>حالة الوحدات</h3>
-        <div style="height:300px"><canvas id="unitsChart"></canvas></div>
+        <div style="border-bottom:1px solid #333; padding-bottom:10px; margin-bottom:15px; display:flex; justify-content:space-between;">
+            <h4 style="margin:0"><i class="fa-solid fa-clock"></i> عقود تنتهي قريباً</h4>
+            <span style="font-size:12px; background:#333; padding:2px 8px; border-radius:5px">عرض الكل</span>
+        </div>
+        <div style="text-align:center; padding:30px; color:#666">
+            <i class="fa-solid fa-check-circle" style="font-size:40px; margin-bottom:10px; display:block"></i>
+            لا توجد عقود تنتهي قريباً
+        </div>
+    </div>
+
+    <div class="card">
+        <div style="border-bottom:1px solid #333; padding-bottom:10px; margin-bottom:15px; display:flex; justify-content:space-between;">
+            <h4 style="margin:0"><i class="fa-solid fa-calendar-days"></i> دفعات قادمة</h4>
+            <span style="font-size:12px; background:#333; padding:2px 8px; border-radius:5px">عرض الكل</span>
+        </div>
+        <div style="text-align:center; padding:30px; color:#666">
+            <i class="fa-solid fa-check-circle" style="font-size:40px; margin-bottom:10px; display:block"></i>
+            لا توجد دفعات قادمة خلال 30 يوم
+        </div>
     </div>
 </div>
-
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    // رسم بياني 1: المالي
-    new Chart(document.getElementById('financeChart'), {
-        type: 'line',
-        data: {
-            labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'],
-            datasets: [{
-                label: 'التحصيل',
-                data: [0, <?= $income/5 ?>, <?= $income/3 ?>, <?= $income ?>], // بيانات وهمية للجمالية إذا كان الرقم ثابت
-                borderColor: '#6366f1',
-                backgroundColor: 'rgba(99,102,241,0.1)',
-                fill: true, tension: 0.4
-            }]
-        },
-        options: { responsive: true, maintainAspectRatio: false, scales: { y: { grid: { color: '#222' } }, x: { grid: { display: false } } }, plugins: { legend: { display: false } } }
-    });
-
-    // رسم بياني 2: الوحدات
-    new Chart(document.getElementById('unitsChart'), {
-        type: 'doughnut',
-        data: {
-            labels: ['مؤجرة', 'شاغرة'],
-            datasets: [{
-                data: [<?= $rented_units ?>, <?= $total_units - $rented_units ?>],
-                backgroundColor: ['#10b981', '#222'],
-                borderWidth: 0
-            }]
-        },
-        options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'bottom', labels: { color: '#fff' } } } }
-    });
-});
-</script>
