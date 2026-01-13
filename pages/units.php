@@ -1,131 +1,119 @@
 <?php
-// معالجة إضافة وحدة جديدة
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_unit'])) {
+// 1. كود الحذف
+if (isset($_POST['delete_id'])) {
     check_csrf();
-    try {
-        // التأكد من الحقول
-        $stmt = $pdo->prepare("INSERT INTO units (property_id, unit_name, type, yearly_price, elec_meter_no, water_meter_no, status) VALUES (?,?,?,?,?,?, 'available')");
-        $stmt->execute([
-            $_POST['pid'], 
-            $_POST['name'], 
-            $_POST['type'], 
-            $_POST['price'], 
-            $_POST['elec'], 
-            $_POST['water']
-        ]);
-        echo "<script>window.location='index.php?p=units';</script>";
-    } catch(Exception $e) {
-        echo "<script>alert('خطأ: لم يتم الحفظ. تأكد من البيانات.');</script>";
+    $stmt = $pdo->prepare("DELETE FROM properties WHERE id = ?");
+    $stmt->execute([$_POST['delete_id']]);
+    echo "<script>window.location='index.php?p=properties';</script>";
+}
+
+// 2. كود الحفظ (إضافة أو تعديل)
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_prop'])) {
+    check_csrf();
+    
+    if(!empty($_POST['prop_id'])){
+        // تحديث (Edit)
+        $stmt = $pdo->prepare("UPDATE properties SET name=?, manager=?, phone=?, address=? WHERE id=?");
+        $stmt->execute([$_POST['name'], $_POST['manager'], $_POST['phone'], $_POST['address'], $_POST['prop_id']]);
+    } else {
+        // إضافة جديد (New)
+        $stmt = $pdo->prepare("INSERT INTO properties (name, manager, phone, address) VALUES (?,?,?,?)");
+        $stmt->execute([$_POST['name'], $_POST['manager'], $_POST['phone'], $_POST['address']]);
     }
+    echo "<script>window.location='index.php?p=properties';</script>";
 }
 ?>
 
 <div class="card">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
-        <h3><i class="fa-solid fa-door-open" style="color:var(--primary)"></i> إدارة الوحدات السكنية</h3>
-        
-        <button onclick="document.getElementById('unitModal').style.display='flex'" class="btn btn-primary">
-            <i class="fa-solid fa-plus"></i> إضافة وحدة جديدة
+        <h3>🏙️ إدارة العقارات</h3>
+        <button onclick="openModal()" class="btn btn-primary">
+            <i class="fa-solid fa-plus"></i> إضافة عقار جديد
         </button>
     </div>
     
-    <table>
-        <thead>
-            <tr>
-                <th>اسم/رقم الوحدة</th>
-                <th>العقار التابع لها</th>
-                <th>النوع</th>
-                <th>عداد الكهرباء</th>
-                <th>السعر السنوي</th>
-                <th>الحالة</th>
-                <th>إجراء</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php 
-            // جلب الوحدات مع اسم العقار
-            $units = $pdo->query("SELECT u.*, p.name as pname FROM units u JOIN properties p ON u.property_id=p.id ORDER BY u.id DESC");
-            while($u = $units->fetch()): ?>
-            <tr>
-                <td style="font-weight:bold; color:white"><?= $u['unit_name'] ?></td>
-                <td><i class="fa-solid fa-building" style="color:#666; font-size:12px"></i> <?= $u['pname'] ?></td>
-                <td><span class="badge" style="background:#222; border:1px solid #333"><?= $u['type'] ?></span></td>
-                <td style="font-family:monospace; color:#aaa"><?= $u['elec_meter_no'] ?: '-' ?></td>
-                <td style="font-weight:bold"><?= number_format($u['yearly_price']) ?></td>
-                <td>
-                    <?php if($u['status']=='rented'): ?>
-                        <span class="badge" style="background:rgba(239,68,68,0.2); color:#f87171">مؤجر</span>
-                    <?php else: ?>
-                        <span class="badge" style="background:rgba(16,185,129,0.2); color:#34d399">شاغر</span>
-                    <?php endif; ?>
-                </td>
-                <td>
-                    <button class="btn btn-dark" style="padding:5px 10px; font-size:12px"><i class="fa-solid fa-pen"></i></button>
-                </td>
-            </tr>
-            <?php endwhile; ?>
-        </tbody>
-    </table>
+    <?php 
+    $props = $pdo->query("SELECT * FROM properties ORDER BY id DESC");
+    if($props->rowCount() == 0):
+    ?>
+        <div style="text-align:center; padding:40px; color:#666">
+            <i class="fa-solid fa-city" style="font-size:40px; margin-bottom:10px"></i>
+            <p>لا توجد عقارات مضافة حتى الآن</p>
+        </div>
+    <?php else: ?>
+        <table>
+            <thead><tr><th>اسم العقار</th><th>العنوان</th><th>المدير</th><th>الجوال</th><th>إجراءات</th></tr></thead>
+            <tbody>
+                <?php while($r = $props->fetch()): ?>
+                <tr>
+                    <td style="font-weight:bold; color:white"><?= $r['name'] ?></td>
+                    <td><i class="fa-solid fa-location-dot" style="color:#6366f1"></i> <?= $r['address'] ?></td>
+                    <td><?= $r['manager'] ?></td>
+                    <td><?= $r['phone'] ?></td>
+                    <td style="display:flex; gap:5px">
+                        <button onclick='editProp(<?= json_encode($r) ?>)' class="btn btn-dark" style="padding:5px 10px; font-size:12px"><i class="fa-solid fa-pen"></i></button>
+                        
+                        <form method="POST" onsubmit="return confirm('هل أنت متأكد من حذف هذا العقار؟ سيتم حذف جميع الوحدات المرتبطة به!');" style="margin:0">
+                            <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                            <input type="hidden" name="delete_id" value="<?= $r['id'] ?>">
+                            <button class="btn btn-danger" style="padding:5px 10px; font-size:12px"><i class="fa-solid fa-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                <?php endwhile; ?>
+            </tbody>
+        </table>
+    <?php endif; ?>
 </div>
 
-<div id="unitModal" class="modal">
+<div id="propModal" class="modal">
     <div class="modal-content">
-        <div class="close-icon" onclick="document.getElementById('unitModal').style.display='none'">
-            <i class="fa-solid fa-xmark"></i>
-        </div>
-        
-        <div class="modal-header">
-            <div class="modal-title">تسجيل وحدة جديدة</div>
-        </div>
+        <div class="close-icon" onclick="document.getElementById('propModal').style.display='none'"><i class="fa-solid fa-xmark"></i></div>
+        <div class="modal-header"><div class="modal-title" id="modalTitle">إضافة عقار جديد</div></div>
         
         <form method="POST">
             <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-            <input type="hidden" name="add_unit" value="1">
-            
-            <div class="inp-group">
-                <label class="inp-label">العقار التابع له</label>
-                <select name="pid" class="inp" required>
-                    <option value="">-- اختر العقار --</option>
-                    <?php $ps=$pdo->query("SELECT * FROM properties"); while($p=$ps->fetch()) echo "<option value='{$p['id']}'>{$p['name']}</option>"; ?>
-                </select>
+            <input type="hidden" name="save_prop" value="1">
+            <input type="hidden" name="prop_id" id="prop_id"> <div class="inp-group">
+                <label class="inp-label">اسم العقار</label>
+                <input type="text" name="name" id="p_name" class="inp" placeholder="مثال: عمارة النخيل" required>
             </div>
             
-            <div class="inp-grid">
-                <div>
-                    <label class="inp-label">اسم / رقم الوحدة</label>
-                    <input type="text" name="name" class="inp" placeholder="مثال: شقة 5" required>
-                </div>
-                <div>
-                    <label class="inp-label">نوع الوحدة</label>
-                    <select name="type" class="inp">
-                        <option value="apartment">شقة سكنية</option>
-                        <option value="shop">محل تجاري</option>
-                        <option value="villa">فيلا / دبلوكس</option>
-                        <option value="office">مكتب</option>
-                        <option value="warehouse">مستودع</option>
-                    </select>
-                </div>
-            </div>
-
             <div class="inp-group">
-                <label class="inp-label">السعر السنوي المتوقع</label>
-                <input type="number" name="price" class="inp" placeholder="0.00" required>
+                <label class="inp-label">العنوان</label>
+                <input type="text" name="address" id="p_address" class="inp" placeholder="المدينة، الحي، الشارع">
             </div>
 
             <div class="inp-grid">
-                <div>
-                    <label class="inp-label">رقم عداد الكهرباء</label>
-                    <input type="text" name="elec" class="inp" placeholder="اختياري">
-                </div>
-                <div>
-                    <label class="inp-label">رقم عداد المياه</label>
-                    <input type="text" name="water" class="inp" placeholder="اختياري">
-                </div>
+                <div><label class="inp-label">مدير العقار</label><input type="text" name="manager" id="p_manager" class="inp"></div>
+                <div><label class="inp-label">رقم التواصل</label><input type="text" name="phone" id="p_phone" class="inp"></div>
             </div>
 
-            <button class="btn btn-primary" style="width:100%; justify-content:center; margin-top:15px">
-                <i class="fa-solid fa-check"></i> حفظ الوحدة
+            <button class="btn btn-primary" style="width:100%; justify-content:center; margin-top:10px">
+                <i class="fa-solid fa-check"></i> حفظ البيانات
             </button>
         </form>
     </div>
 </div>
+
+<script>
+    function openModal() {
+        document.getElementById('propModal').style.display='flex';
+        document.getElementById('modalTitle').innerText = 'إضافة عقار جديد';
+        document.getElementById('prop_id').value = '';
+        document.getElementById('p_name').value = '';
+        document.getElementById('p_address').value = '';
+        document.getElementById('p_manager').value = '';
+        document.getElementById('p_phone').value = '';
+    }
+
+    function editProp(data) {
+        document.getElementById('propModal').style.display='flex';
+        document.getElementById('modalTitle').innerText = 'تعديل بيانات العقار';
+        document.getElementById('prop_id').value = data.id;
+        document.getElementById('p_name').value = data.name;
+        document.getElementById('p_address').value = data.address;
+        document.getElementById('p_manager').value = data.manager;
+        document.getElementById('p_phone').value = data.phone;
+    }
+</script>
