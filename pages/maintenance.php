@@ -1,43 +1,17 @@
 <?php
-// حفظ الطلب
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_maint'])) {
-    // جلب معرف العقار تلقائياً
     $u = $pdo->query("SELECT property_id FROM units WHERE id=".$_POST['uid'])->fetch();
     $pid = $u ? $u['property_id'] : 0;
-    
     $stmt = $pdo->prepare("INSERT INTO maintenance (property_id, unit_id, vendor_id, description, cost, request_date, status) VALUES (?,?,?,?,?, CURDATE(), 'pending')");
     $stmt->execute([$pid, $_POST['uid'], $_POST['vid'], $_POST['desc'], $_POST['cost']]);
     echo "<script>window.location='index.php?p=maintenance';</script>";
 }
 ?>
 
-<style>
-    .custom-modal {
-        display: none; 
-        position: fixed; 
-        top: 0; left: 0; 
-        width: 100%; height: 100%; 
-        background: rgba(0,0,0,0.85); 
-        z-index: 10000; 
-        justify-content: center; 
-        align-items: center;
-        backdrop-filter: blur(5px);
-    }
-    .custom-modal-content {
-        background: #1f1f1f; 
-        padding: 30px; 
-        border-radius: 15px; 
-        width: 500px; 
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
-        border: 1px solid #333;
-        animation: fadeIn 0.3s ease;
-    }
-</style>
-
-<div class="card">
+<div class="card" style="position: relative; z-index: 1;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
         <h3>🛠️ طلبات الصيانة</h3>
-        <button onclick="document.getElementById('maintOverlay').style.display='flex'" class="btn btn-primary">
+        <button type="button" onclick="document.getElementById('mainModal').style.display='flex'" class="btn btn-primary">
             <i class="fa-solid fa-plus"></i> تسجيل طلب جديد
         </button>
     </div>
@@ -59,9 +33,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_maint'])) {
             ?>
             <tr style="border-bottom:1px solid #333">
                 <td style="padding:15px">#<?= $r['id'] ?></td>
-                <td style="padding:15px; font-weight:bold"><?= $r['unit_name'] ?></td>
+                <td style="padding:15px"><?= $r['unit_name'] ?></td>
                 <td style="padding:15px"><?= $r['description'] ?></td>
-                <td style="padding:15px"><?= $r['vname'] ?: '<span style="color:#666">غير محدد</span>' ?></td>
+                <td style="padding:15px"><?= $r['vname'] ?: '-' ?></td>
                 <td style="padding:15px">
                     <span class="badge" style="background:<?= $r['status']=='pending'?'#f59e0b':'#10b981' ?>">
                         <?= $r['status']=='pending'?'انتظار':'مكتمل' ?>
@@ -73,42 +47,42 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_maint'])) {
     </table>
 </div>
 
-<div id="maintOverlay" class="custom-modal">
-    <div class="custom-modal-content">
+<div id="mainModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:999999 !important; justify-content:center; align-items:center;">
+    <div style="background:#1f1f1f; padding:30px; border-radius:15px; width:500px; border:1px solid #444; box-shadow: 0 0 50px rgba(0,0,0,0.8);">
         <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
             <h3 style="margin:0; color:#fff">تسجيل طلب صيانة</h3>
-            <div onclick="document.getElementById('maintOverlay').style.display='none'" style="cursor:pointer; font-size:20px; color:#aaa">
+            <button type="button" onclick="document.getElementById('mainModal').style.display='none'" style="background:none; border:none; color:#fff; font-size:20px; cursor:pointer;">
                 <i class="fa-solid fa-xmark"></i>
-            </div>
+            </button>
         </div>
         
         <form method="POST">
             <input type="hidden" name="save_maint" value="1">
             
             <div style="margin-bottom:15px">
-                <label class="inp-label">الوحدة المتضررة</label>
-                <select name="uid" class="inp" required style="width:100%">
+                <label style="color:#bbb; display:block; margin-bottom:5px">الوحدة المتضررة</label>
+                <select name="uid" class="inp" style="width:100%; padding:10px; background:#333; color:white; border:1px solid #555" required>
                     <option value="">-- اختر الوحدة --</option>
                     <?php $us=$pdo->query("SELECT * FROM units"); while($u=$us->fetch()) echo "<option value='{$u['id']}'>{$u['unit_name']}</option>"; ?>
                 </select>
             </div>
             
             <div style="margin-bottom:15px">
-                <label class="inp-label">المقاول المكلف (اختياري)</label>
-                <select name="vid" class="inp" style="width:100%">
+                <label style="color:#bbb; display:block; margin-bottom:5px">المقاول (اختياري)</label>
+                <select name="vid" class="inp" style="width:100%; padding:10px; background:#333; color:white; border:1px solid #555">
                     <option value="0">-- اختر المقاول --</option>
-                    <?php $vs=$pdo->query("SELECT * FROM vendors"); while($v=$vs->fetch()) echo "<option value='{$v['id']}'>{$v['name']} ({$v['service_type']})</option>"; ?>
+                    <?php $vs=$pdo->query("SELECT * FROM vendors"); while($v=$vs->fetch()) echo "<option value='{$v['id']}'>{$v['name']}</option>"; ?>
                 </select>
             </div>
             
             <div style="margin-bottom:15px">
-                <label class="inp-label">وصف المشكلة</label>
-                <textarea name="desc" class="inp" required style="width:100%; height:80px;"></textarea>
+                <label style="color:#bbb; display:block; margin-bottom:5px">وصف المشكلة</label>
+                <textarea name="desc" class="inp" style="width:100%; padding:10px; background:#333; color:white; border:1px solid #555; height:80px" required></textarea>
             </div>
             
             <div style="margin-bottom:25px">
-                <label class="inp-label">التكلفة التقديرية</label>
-                <input type="number" name="cost" class="inp" placeholder="0.00" style="width:100%">
+                <label style="color:#bbb; display:block; margin-bottom:5px">التكلفة التقديرية</label>
+                <input type="number" name="cost" class="inp" style="width:100%; padding:10px; background:#333; color:white; border:1px solid #555">
             </div>
             
             <button class="btn btn-primary" style="width:100%; justify-content:center; padding:12px">حفظ الطلب</button>
