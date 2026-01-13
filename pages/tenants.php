@@ -1,84 +1,59 @@
 <?php
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_tenant'])) {
     check_csrf();
-    $name = $_POST['name'];
-    $phone = $_POST['phone'];
-    $id_num = $_POST['id_number'];
-    $ai_data = null;
-
-    if (!empty($_FILES['id_photo']['tmp_name'])) {
-        $analysis = $AI->analyzeIDCard($_FILES['id_photo']['tmp_name']);
-        if ($analysis['success']) {
-            if(empty($name)) $name = $analysis['data']['extracted_name'];
-            if(empty($id_num)) $id_num = $analysis['data']['id_number'];
-            $ai_data = json_encode($analysis['data'], JSON_UNESCAPED_UNICODE);
-        }
-    }
-    
-    try {
-        $stmt = $pdo->prepare("INSERT INTO tenants (name, phone, id_number, document_data) VALUES (?,?,?,?)");
-        $stmt->execute([$name, $phone, $id_num, $ai_data]);
-        $AI->sendWhatsApp($phone, "تم تسجيلك بنجاح في نظام دار الميار.");
-        echo "<script>window.location='index.php?p=tenants';</script>";
-    } catch(Exception $e) { echo "<p style='color:red'>خطأ: ".$e->getMessage()."</p>"; }
+    $stmt = $pdo->prepare("INSERT INTO tenants (name, phone, id_number) VALUES (?,?,?)");
+    $stmt->execute([$_POST['name'], $_POST['phone'], $_POST['nid']]);
+    echo "<script>window.location='index.php?p=tenants';</script>";
 }
 ?>
 
 <div class="card">
-    <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
-        <h3 style="margin:0">👥 إدارة المستأجرين</h3>
-        <button onclick="document.getElementById('addTenantModal').style.display='flex'" class="btn">
-            <i class="fa-solid fa-magic"></i> إضافة ذكية
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+        <h3>👥 إدارة المستأجرين</h3>
+        <button onclick="document.getElementById('tenantModal').style.display='flex'" class="btn btn-primary">
+            <i class="fa-solid fa-user-plus"></i> إضافة مستأجر جديد
         </button>
     </div>
     
     <table>
-        <thead><tr><th>الاسم</th><th>الجوال</th><th>الهوية</th><th>الذكاء</th><th>إجراء</th></tr></thead>
+        <thead><tr><th>الاسم</th><th>الجوال</th><th>رقم الهوية</th><th>ملف</th></tr></thead>
         <tbody>
             <?php 
             $ts=$pdo->query("SELECT * FROM tenants ORDER BY id DESC"); 
-            while($t=$ts->fetch()): 
-                $ai = !empty($t['document_data']);
-            ?>
+            while($t=$ts->fetch()): ?>
             <tr>
-                <td><?= htmlspecialchars($t['name']) ?></td>
-                <td><?= htmlspecialchars($t['phone']) ?></td>
-                <td><?= htmlspecialchars($t['id_number']) ?></td>
-                <td>
-                    <?php if($ai): ?><span class="badge bg-success">AI Verified</span>
-                    <?php else: ?><span class="badge bg-secondary">يدوي</span><?php endif; ?>
-                </td>
-                <td><a href="#" class="btn" style="padding:5px 15px; font-size:12px">عرض</a></td>
+                <td style="font-weight:bold"><?= $t['name'] ?></td>
+                <td><?= $t['phone'] ?></td>
+                <td><?= $t['id_number'] ?></td>
+                <td><a href="#" class="btn btn-dark" style="padding:5px 15px; font-size:12px">عرض</a></td>
             </tr>
             <?php endwhile; ?>
         </tbody>
     </table>
 </div>
 
-<div id="addTenantModal" class="modal">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <button class="btn-close" onclick="document.getElementById('addTenantModal').style.display='none'">✕</button>
-            <h2 style="margin-top:0">إضافة مستأجر (AI)</h2>
-            <form method="POST" enctype="multipart/form-data">
-                <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-                <input type="hidden" name="add_tenant" value="1">
-                
-                <div style="background:#222; padding:15px; border-radius:10px; margin-bottom:20px; color:#10b981; font-size:13px">
-                    <i class="fa-solid fa-robot"></i> قم برفع الهوية وسيقوم النظام بتعبئة البيانات.
-                </div>
-                
-                <label>صورة الهوية</label>
-                <input type="file" name="id_photo" class="inp">
-                
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
-                    <input type="text" name="name" class="inp" placeholder="الاسم (اختياري)">
-                    <input type="text" name="phone" class="inp" placeholder="الجوال" required>
-                </div>
-                <input type="text" name="id_number" class="inp" placeholder="رقم الهوية">
-                
-                <button class="btn btn-green" style="width:100%; margin-top:10px">حفظ وتحليل</button>
-            </form>
-        </div>
+<div id="tenantModal" class="modal">
+    <div class="modal-content">
+        <div class="close-icon" onclick="document.getElementById('tenantModal').style.display='none'"><i class="fa-solid fa-xmark"></i></div>
+        <div class="modal-header"><div class="modal-title">إضافة مستأجر جديد</div></div>
+        
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+            <input type="hidden" name="add_tenant" value="1">
+            
+            <div class="inp-group">
+                <label class="inp-label">الاسم الكامل</label>
+                <input type="text" name="name" class="inp" placeholder="الاسم كما في الهوية" required>
+            </div>
+            
+            <div class="inp-grid">
+                <div><label class="inp-label">رقم الجوال</label><input type="text" name="phone" class="inp" placeholder="05xxxxxxxx" required></div>
+                <div><label class="inp-label">رقم الهوية / الإقامة</label><input type="text" name="nid" class="inp"></div>
+            </div>
+
+            <button class="btn btn-primary" style="width:100%; justify-content:center; margin-top:10px">
+                <i class="fa-solid fa-check"></i> حفظ البيانات
+            </button>
+        </form>
     </div>
 </div>
