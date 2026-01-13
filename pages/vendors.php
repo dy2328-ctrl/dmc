@@ -1,14 +1,11 @@
 <?php
-// pages/vendors.php
-
-// 1. الحذف
+// معالجة الحذف
 if (isset($_POST['delete_id'])) {
     $pdo->prepare("DELETE FROM vendors WHERE id=?")->execute([$_POST['delete_id']]);
     echo "<script>window.location='index.php?p=vendors';</script>";
-    exit;
 }
 
-// 2. الحفظ
+// معالجة الحفظ (جديد / تعديل)
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_vendor'])) {
     if (!empty($_POST['vid'])) {
         $stmt = $pdo->prepare("UPDATE vendors SET name=?, service_type=?, phone=? WHERE id=?");
@@ -18,87 +15,122 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_vendor'])) {
         $stmt->execute([$_POST['name'], $_POST['type'], $_POST['phone']]);
     }
     echo "<script>window.location='index.php?p=vendors';</script>";
-    exit;
-}
-
-// تحديد وضع العرض (قائمة أم نموذج)
-$action = $_GET['action'] ?? 'list';
-$edit_data = [];
-if ($action == 'form' && isset($_GET['id'])) {
-    $stmt = $pdo->prepare("SELECT * FROM vendors WHERE id=?");
-    $stmt->execute([$_GET['id']]);
-    $edit_data = $stmt->fetch();
 }
 ?>
 
+<style>
+    /* تنسيق خاص للنافذة لضمان ظهورها بشكل جميل */
+    .custom-modal {
+        display: none; 
+        position: fixed; 
+        top: 0; left: 0; 
+        width: 100%; height: 100%; 
+        background: rgba(0,0,0,0.85); 
+        z-index: 10000; 
+        justify-content: center; 
+        align-items: center;
+        backdrop-filter: blur(5px); /* تأثير ضبابي جميل للخلفية */
+    }
+    .custom-modal-content {
+        background: #1f1f1f; 
+        padding: 30px; 
+        border-radius: 15px; 
+        width: 450px; 
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+        border: 1px solid #333;
+        animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+
 <div class="card">
-    <?php if ($action == 'list'): ?>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
-            <h3>👷 إدارة المقاولين</h3>
-            <a href="index.php?p=vendors&action=form" class="btn btn-primary">
-                <i class="fa-solid fa-plus"></i> إضافة مقاول جديد
-            </a>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+        <h3>👷 إدارة المقاولين</h3>
+        <button onclick="openVendorModal()" class="btn btn-primary">
+            <i class="fa-solid fa-plus"></i> إضافة مقاول
+        </button>
+    </div>
+    
+    <table style="width:100%; border-collapse:collapse">
+        <thead>
+            <tr style="background:#222; text-align:right">
+                <th style="padding:15px">الاسم</th>
+                <th style="padding:15px">التخصص</th>
+                <th style="padding:15px">الجوال</th>
+                <th style="padding:15px">إجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php 
+            $vendors = $pdo->query("SELECT * FROM vendors ORDER BY id DESC");
+            while($v = $vendors->fetch()): 
+            ?>
+            <tr style="border-bottom:1px solid #333">
+                <td style="padding:15px; font-weight:bold"><?= $v['name'] ?></td>
+                <td style="padding:15px"><span class="badge" style="background:#374151"><?= $v['service_type'] ?></span></td>
+                <td style="padding:15px"><?= $v['phone'] ?></td>
+                <td style="padding:15px; display:flex; gap:10px">
+                    <button onclick='editVendor(<?= json_encode($v) ?>)' class="btn btn-dark btn-sm"><i class="fa-solid fa-pen"></i></button>
+                    <form method="POST" onsubmit="return confirm('هل أنت متأكد من الحذف؟')" style="margin:0">
+                        <input type="hidden" name="delete_id" value="<?= $v['id'] ?>">
+                        <button class="btn btn-danger btn-sm"><i class="fa-solid fa-trash"></i></button>
+                    </form>
+                </td>
+            </tr>
+            <?php endwhile; ?>
+        </tbody>
+    </table>
+</div>
+
+<div id="vendorOverlay" class="custom-modal">
+    <div class="custom-modal-content">
+        <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+            <h3 id="vTitle" style="margin:0; color:#fff">إضافة مقاول</h3>
+            <div onclick="document.getElementById('vendorOverlay').style.display='none'" style="cursor:pointer; font-size:20px; color:#aaa; transition:0.3s hover:color:#fff">
+                <i class="fa-solid fa-xmark"></i>
+            </div>
         </div>
-
-        <table style="width:100%; border-collapse:collapse">
-            <thead>
-                <tr style="background:#222; text-align:right">
-                    <th style="padding:10px">الاسم</th>
-                    <th style="padding:10px">التخصص</th>
-                    <th style="padding:10px">الجوال</th>
-                    <th style="padding:10px">إجراءات</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php 
-                $vendors = $pdo->query("SELECT * FROM vendors ORDER BY id DESC");
-                if($vendors->rowCount() == 0): 
-                    echo "<tr><td colspan='4' style='text-align:center; padding:20px'>لا توجد بيانات.</td></tr>";
-                else:
-                    while($v = $vendors->fetch()): 
-                ?>
-                <tr style="border-bottom:1px solid #333">
-                    <td style="padding:10px"><?= $v['name'] ?></td>
-                    <td style="padding:10px"><?= $v['service_type'] ?></td>
-                    <td style="padding:10px"><?= $v['phone'] ?></td>
-                    <td style="padding:10px; display:flex; gap:5px">
-                        <a href="index.php?p=vendors&action=form&id=<?= $v['id'] ?>" class="btn btn-dark btn-sm"><i class="fa-solid fa-pen"></i></a>
-                        <form method="POST" onsubmit="return confirm('حذف؟')" style="margin:0">
-                            <input type="hidden" name="delete_id" value="<?= $v['id'] ?>">
-                            <button class="btn btn-danger btn-sm"><i class="fa-solid fa-trash"></i></button>
-                        </form>
-                    </td>
-                </tr>
-                <?php endwhile; endif; ?>
-            </tbody>
-        </table>
-
-    <?php else: ?>
-        <div style="display:flex; justify-content:space-between; margin-bottom:20px; border-bottom:1px solid #333; padding-bottom:10px">
-            <h3><?= isset($_GET['id']) ? 'تعديل بيانات المقاول' : 'إضافة مقاول جديد' ?></h3>
-            <a href="index.php?p=vendors" class="btn btn-dark">رجوع للقائمة</a>
-        </div>
-
-        <form method="POST" style="max-width:600px">
+        
+        <form method="POST">
             <input type="hidden" name="save_vendor" value="1">
-            <input type="hidden" name="vid" value="<?= $edit_data['id'] ?? '' ?>">
-
+            <input type="hidden" name="vid" id="v_id">
+            
             <div style="margin-bottom:15px">
                 <label class="inp-label">اسم المقاول / الشركة</label>
-                <input type="text" name="name" class="inp" value="<?= $edit_data['name'] ?? '' ?>" required style="width:100%">
+                <input type="text" name="name" id="v_name" class="inp" placeholder="الاسم هنا..." required style="width:100%">
             </div>
-
+            
             <div style="margin-bottom:15px">
-                <label class="inp-label">التخصص (مثال: كهرباء، سباكة)</label>
-                <input type="text" name="type" class="inp" value="<?= $edit_data['service_type'] ?? '' ?>" required style="width:100%">
+                <label class="inp-label">التخصص</label>
+                <input type="text" name="type" id="v_type" class="inp" placeholder="مثال: سباكة" required style="width:100%">
             </div>
-
-            <div style="margin-bottom:20px">
+            
+            <div style="margin-bottom:25px">
                 <label class="inp-label">رقم الجوال</label>
-                <input type="text" name="phone" class="inp" value="<?= $edit_data['phone'] ?? '' ?>" required style="width:100%">
+                <input type="text" name="phone" id="v_phone" class="inp" placeholder="05xxxxxxxx" required style="width:100%">
             </div>
-
-            <button class="btn btn-primary" style="padding:10px 20px">حفظ البيانات</button>
+            
+            <button class="btn btn-primary" style="width:100%; justify-content:center; padding:12px">حفظ البيانات</button>
         </form>
-    <?php endif; ?>
+    </div>
 </div>
+
+<script>
+    function openVendorModal() {
+        document.getElementById('vendorOverlay').style.display = 'flex';
+        document.getElementById('vTitle').innerText = 'إضافة مقاول جديد';
+        document.getElementById('v_id').value = '';
+        document.getElementById('v_name').value = '';
+        document.getElementById('v_type').value = '';
+        document.getElementById('v_phone').value = '';
+    }
+    
+    function editVendor(data) {
+        document.getElementById('vendorOverlay').style.display = 'flex';
+        document.getElementById('vTitle').innerText = 'تعديل بيانات المقاول';
+        document.getElementById('v_id').value = data.id;
+        document.getElementById('v_name').value = data.name;
+        document.getElementById('v_type').value = data.service_type;
+        document.getElementById('v_phone').value = data.phone;
+    }
+</script>
