@@ -1,24 +1,28 @@
 <?php
-// حفظ الطلب
+// 1. منطق الفتح
+$show_modal = false;
+if (isset($_GET['op']) && $_GET['op'] == 'add') {
+    $show_modal = true;
+}
+
+// 2. معالجة الحفظ
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_maint'])) {
     $u = $pdo->query("SELECT property_id FROM units WHERE id=".$_POST['uid'])->fetch();
     $pid = $u ? $u['property_id'] : 0;
+    
     $stmt = $pdo->prepare("INSERT INTO maintenance (property_id, unit_id, vendor_id, description, cost, request_date, status) VALUES (?,?,?,?,?, CURDATE(), 'pending')");
     $stmt->execute([$pid, $_POST['uid'], $_POST['vid'], $_POST['desc'], $_POST['cost']]);
     echo "<script>window.location='index.php?p=maintenance';</script>";
+    exit;
 }
 ?>
-
-<style>
-    .fix-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:999999; justify-content:center; align-items:center; }
-</style>
 
 <div class="card">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
         <h3>🛠️ طلبات الصيانة</h3>
-        <button onclick="document.getElementById('maintModal').style.display='flex'" class="btn btn-primary">
+        <a href="index.php?p=maintenance&op=add" class="btn btn-primary" style="text-decoration:none">
             <i class="fa-solid fa-plus"></i> تسجيل طلب جديد
-        </button>
+        </a>
     </div>
     
     <table style="width:100%; border-collapse:collapse">
@@ -50,15 +54,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_maint'])) {
     </table>
 </div>
 
-<div id="maintModal" class="fix-modal">
-    <div style="background:#1f1f1f; padding:30px; border-radius:15px; width:500px; border:1px solid #444; position:relative;">
-        <h3 style="margin-top:0; color:#fff; margin-bottom:20px">تسجيل طلب صيانة</h3>
+<?php if($show_modal): ?>
+<div style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:999999; display:flex; justify-content:center; align-items:center;">
+    <div style="background:#1f1f1f; padding:30px; border-radius:15px; width:500px; border:1px solid #444; box-shadow: 0 0 50px rgba(0,0,0,0.8); animation: fadeIn 0.3s">
         
-        <div onclick="document.getElementById('maintModal').style.display='none'" style="position:absolute; top:20px; left:20px; color:#aaa; font-size:20px; cursor:pointer;">
-            <i class="fa-solid fa-xmark"></i>
+        <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+            <h3 style="margin:0; color:#fff">تسجيل طلب صيانة</h3>
+            <a href="index.php?p=maintenance" style="color:#fff; font-size:20px; text-decoration:none;">
+                <i class="fa-solid fa-xmark"></i>
+            </a>
         </div>
         
-        <form method="POST">
+        <form method="POST" action="index.php?p=maintenance">
             <input type="hidden" name="save_maint" value="1">
             
             <div style="margin-bottom:15px">
@@ -91,3 +98,4 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_maint'])) {
         </form>
     </div>
 </div>
+<?php endif; ?>
